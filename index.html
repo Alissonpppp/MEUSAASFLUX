@@ -87,16 +87,29 @@
             },
             validate: (email, key) => {
                 const db = JSON.parse(localStorage.getItem(DB_KEY) || '{"keys":[]}');
-                const lic = db.keys.find(k => k.key === key);
-                if (!lic) return { ok: false, msg: 'Chave não encontrada.' };
+                
+                // DIAGNÓSTICO: Verifica se o banco de licenças está vazio
+                if (db.keys.length === 0) {
+                    return { ok: false, msg: 'Sistema desconectado do Admin. (Dica: Abra ambos os arquivos no mesmo servidor/local)' };
+                }
+
+                // Busca a chave ignorando maiúsculas/minúsculas
+                const lic = db.keys.find(k => k.key.toUpperCase() === key.toUpperCase());
+                
+                if (!lic) return { ok: false, msg: 'Chave não encontrada. Verifique se digitou corretamente.' };
                 if (new Date() > new Date(lic.expires)) return { ok: false, msg: 'Licença expirada.' };
+                
                 if (!lic.assignedEmail) {
                     lic.assignedEmail = email;
                     lic.status = 'active';
+                    // Atualiza o DB com a chave vinculada
+                    const keyIndex = db.keys.findIndex(k => k.key === lic.key);
+                    db.keys[keyIndex] = lic;
                     localStorage.setItem(DB_KEY, JSON.stringify(db));
                     return { ok: true, license: lic };
                 } 
-                if (lic.assignedEmail !== email) return { ok: false, msg: 'Chave pertence a outro usuário.' };
+                
+                if (lic.assignedEmail !== email) return { ok: false, msg: 'Chave já está em uso por outro usuário.' };
                 return { ok: true, license: lic };
             },
             getData: () => JSON.parse(localStorage.getItem(APP_DATA_KEY)),
@@ -115,7 +128,8 @@
                 e.preventDefault();
                 setLoading(true); setError('');
                 setTimeout(() => {
-                    const res = ClientSystem.validate(email.trim(), key.trim());
+                    // Força maiúsculas na chave para evitar erros de digitação
+                    const res = ClientSystem.validate(email.trim(), key.trim().toUpperCase());
                     if(res.ok) onSuccess(res.license, email);
                     else { setError(res.msg); setLoading(false); }
                 }, 800);
