@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FluxBlue - Área do Cliente</title>
+    
+    <!-- React & Tailwind -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' } }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ÍCONES ---
+        const Icons = {
+            Key: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+        };
+
+        // --- LÓGICA DE VALIDAÇÃO (CLIENTE) ---
+        const DB_KEY = 'fluxblue_license_db';
+        
+        const ClientSystem = {
+            init: () => {
+                // Se não existir DB, cria vazio (evita crash, mas cliente não gera chaves)
+                if (!localStorage.getItem(DB_KEY)) {
+                    localStorage.setItem(DB_KEY, JSON.stringify({ keys: [], clientData: [] }));
+                }
+            },
+            validateAndLogin: (email, inputKey) => {
+                const db = JSON.parse(localStorage.getItem(DB_KEY));
+                const licenseIndex = db.keys.findIndex(k => k.key === inputKey);
+
+                if (licenseIndex === -1) return { success: false, msg: 'Chave de licença inválida.' };
+
+                const license = db.keys[licenseIndex];
+                const now = new Date();
+                const expires = new Date(license.expires);
+
+                if (now > expires) return { success: false, msg: 'Esta licença expirou.' };
+
+                if (!license.assignedEmail) {
+                    license.assignedEmail = email;
+                    license.status = 'active';
+                    db.keys[licenseIndex] = license;
+                    localStorage.setItem(DB_KEY, JSON.stringify(db));
+                    return { success: true, license };
+                } else if (license.assignedEmail !== email) {
+                    return { success: false, msg: 'Esta chave já está em uso por outro e-mail.' };
+                }
+
+                return { success: true, license };
+            }
+        };
+
+        // --- TELAS ---
+        const LoginScreen = ({ onLoginSuccess }) => {
+            const [email, setEmail] = useState('');
+            const [key, setKey] = useState('');
+            const [error, setError] = useState('');
+            const [loading, setLoading] = useState(false);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                setError('');
+                setLoading(true);
+
+                setTimeout(() => {
+                    const result = ClientSystem.validateAndLogin(email.trim(), key.trim());
+                    if (result.success) {
+                        onLoginSuccess(result.license, email);
+                    } else {
+                        setError(result.msg);
+                        setLoading(false);
+                    }
+                }, 800);
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+                    <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-slate-100">
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-bold text-brand-700 mb-2">FluxBlue</h1>
+                            <p className="text-slate-500">Acesso ao Sistema</p>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">E-mail Corporativo</label>
+                                <input required type="email" className="w-full border border-slate-300 rounded-lg px-4 py-3 outline-none focus:border-brand-500 transition" placeholder="nome@empresa.com" value={email} onChange={e => setEmail(e.target.value)} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Chave de Licença</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-3.5 text-slate-400"><Icons.Key /></span>
+                                    <input required type="text" className="w-full border border-slate-300 rounded-lg pl-12 pr-4 py-3 font-mono text-sm outline-none focus:border-brand-500 transition uppercase" placeholder="FLUX-XXXX-XXXX" value={key} onChange={e => setKey(e.target.value)} />
+                                </div>
+                            </div>
+                            {error && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 border border-red-100"><Icons.Alert /> {error}</div>}
+                            <button type="submit" disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-brand-500/20 transition-all">{loading ? 'Validando...' : 'Acessar Plataforma'}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const AppScreen = ({ user, license, onLogout }) => (
+            <div className="min-h-screen bg-slate-50">
+                <nav className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                    <div className="font-bold text-xl text-brand-700">FluxBlue</div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-right">
+                            <div className="text-sm font-semibold text-slate-800">{user}</div>
+                            <div className="text-xs text-slate-500 font-mono">{license.label}</div>
+                        </div>
+                        <button onClick={onLogout} className="text-slate-400 hover:text-red-500"><Icons.LogOut /></button>
+                    </div>
+                </nav>
+                <main className="max-w-5xl mx-auto p-6 md:p-12">
+                    <div className="bg-brand-600 rounded-2xl p-8 text-white shadow-xl mb-8">
+                        <h1 className="text-3xl font-bold mb-2">Bem-vindo!</h1>
+                        <p>Sua licença é válida até {new Date(license.expires).toLocaleDateString('pt-BR')}.</p>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition">
+                                <h3 className="font-bold text-lg mb-2">Módulo {i}</h3>
+                                <p className="text-sm text-slate-500">Funcionalidade ativa.</p>
+                            </div>
+                        ))}
+                    </div>
+                </main>
+            </div>
+        );
+
+        const ClientApp = () => {
+            const [session, setSession] = useState(null);
+            useEffect(() => ClientSystem.init(), []);
+
+            return session 
+                ? <AppScreen user={session.email} license={session.license} onLogout={() => setSession(null)} />
+                : <LoginScreen onLoginSuccess={(license, email) => setSession({ license, email })} />;
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ClientApp />);
+    </script>
+</body>
+</html>
