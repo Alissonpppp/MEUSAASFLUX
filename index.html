@@ -209,7 +209,13 @@
             const [desc, setDesc] = useState('');
             const [amount, setAmount] = useState('');
             const [cat, setCat] = useState('Casa');
-            const [txDate, setTxDate] = useState(new Date().toISOString().split('T')[0]); // Data
+            // FIX: Usar data local correta na inicialização
+            const [txDate, setTxDate] = useState(() => {
+                const now = new Date();
+                // Ajusta o offset para garantir que pegamos o dia local correto YYYY-MM-DD
+                const local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+                return local.toISOString().split('T')[0];
+            });
             const [installments, setInstallments] = useState(1);
             const [hasInst, setHasInst] = useState(false);
             const [type, setType] = useState('expense');
@@ -228,7 +234,8 @@
                 const count = hasInst ? parseInt(installments) : 1;
                 const val = parseFloat(amount) / count;
                 const newT = [];
-                const baseDate = new Date(txDate);
+                // FIX: Forçar meio-dia para evitar problemas de fuso horário
+                const baseDate = new Date(txDate + 'T12:00:00');
 
                 for(let i=0; i<count; i++){
                     const d = new Date(baseDate);
@@ -239,7 +246,12 @@
                     });
                 }
                 setData(p => ({ ...p, transactions: [...p.transactions, ...newT] }));
-                setDesc(''); setAmount(''); setHasInst(false); setInstallments(1); setTxDate(new Date().toISOString().split('T')[0]);
+                setDesc(''); setAmount(''); setHasInst(false); setInstallments(1); 
+                // Reset data para hoje
+                const now = new Date();
+                const local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+                setTxDate(local.toISOString().split('T')[0]);
+                
                 alert('Lançamento salvo!');
             };
 
