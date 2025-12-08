@@ -2,8 +2,8 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FluxBlue - Controle Financeiro Livre</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FluxBlue - Controle Financeiro</title>
     
     <!-- React, ReactDOM, Babel, Tailwind -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -20,19 +20,16 @@
 
     <!-- FIREBASE MODULE LOADER -->
     <script type="module">
-        // Importa as funções específicas do Firebase V10+ (Modular)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-        // Disponibiliza as funções para o script global (Babel/React)
         window.FirebaseSDK = {
             initializeApp,
             auth: { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser },
             firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc }
         };
 
-        // Avisa que o Firebase está pronto
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 
@@ -50,40 +47,36 @@
         }
     </script>
     <style>
-        body { background-color: #f8fafc; color: #1e293b; }
+        body { background-color: #f8fafc; color: #1e293b; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .card-shadow { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
-        .progress-bar-striped {
-            background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent);
-            background-size: 1rem 1rem;
-        }
-        /* Loading Spinner */
         .loader {
             border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%;
             width: 24px; height: 24px; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Ajustes Mobile */
+        .mobile-nav-shadow { box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05); }
     </style>
 </head>
 <body class="antialiased">
     <div id="root">
-        <div class="h-screen flex items-center justify-center">
+        <div class="h-screen flex items-center justify-center flex-col gap-4">
             <div class="loader w-10 h-10 border-4 border-t-blue-500 rounded-full"></div>
+            <p class="text-slate-500 text-sm">Carregando sistema...</p>
         </div>
     </div>
 
     <script type="text/babel">
-        // Função principal que inicia o React apenas quando o Firebase estiver pronto
         function startApp() {
-            // --- CONFIGURAÇÃO FIREBASE ---
             const { initializeApp } = window.FirebaseSDK;
             const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } = window.FirebaseSDK.auth;
             const { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } = window.FirebaseSDK.firestore;
 
-            // Configuração fornecida pelo usuário
             const firebaseConfig = {
                 apiKey: "AIzaSyAz59JRnKoNsX84crKS15pfPbXx47rGy9Q",
                 authDomain: "fluxobluev1.firebaseapp.com",
@@ -96,10 +89,8 @@
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
-            
             const appId = 'fluxblue-prod-v1';
 
-            // --- COMPONENTES REACT ---
             const { useState, useEffect, useMemo, useRef } = React;
             const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } = window.Recharts || {};
 
@@ -113,8 +104,7 @@
                 Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
                 LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
                 Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-                Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
-                Send: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+                Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
                 Cloud: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M20.97 12c.983-1.296 1.53-2.89 1.53-4.5 0-4.142-3.358-7.5-7.5-7.5-3.078 0-5.71 1.867-6.892 4.56a6.5 6.5 0 1 0-.578 12.94"/></svg>,
             };
 
@@ -139,11 +129,10 @@
                     setError('');
                     setLoading(true);
                     try {
-                        // Tenta APENAS fazer login
                         await signInWithEmailAndPassword(auth, email, password);
                     } catch (err) {
                         console.error(err);
-                        setError("Erro ao entrar. Verifique senha/email ou crie a conta no painel.");
+                        setError("Erro ao entrar: " + err.message);
                     } finally {
                         setLoading(false);
                     }
@@ -154,9 +143,7 @@
                         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-slate-200">
                             <div className="text-center mb-6">
                                 <h1 className="text-3xl font-bold text-slate-800 tracking-tight">FluxBlue <span className="text-brand-600">Cloud</span></h1>
-                                <p className="text-slate-500 text-sm mt-1">
-                                    Acesso restrito. Faça login para continuar.
-                                </p>
+                                <p className="text-slate-500 text-sm mt-1">Acesso Restrito</p>
                             </div>
 
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-200">{error}</div>}
@@ -164,29 +151,23 @@
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
-                                    <input required type="email" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" 
-                                        value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@exemplo.com" />
+                                    <input required type="email" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={email} onChange={e=>setEmail(e.target.value)} />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Senha</label>
-                                    <input required type="password" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" 
-                                        value={password} onChange={e=>setPassword(e.target.value)} placeholder="******" minLength={6} />
+                                    <input required type="password" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={password} onChange={e=>setPassword(e.target.value)} />
                                 </div>
-
                                 <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow-md transition-all flex justify-center items-center gap-2 mt-2">
-                                    {loading ? <div className="loader border-t-white border-2 h-4 w-4"></div> : 'Entrar no Sistema'}
+                                    {loading ? <div className="loader border-t-white border-2 h-4 w-4"></div> : 'Entrar'}
                                 </button>
                             </form>
-                            
                             <div className="mt-6 text-center text-xs text-slate-400">
-                                <p>Novas contas devem ser criadas no painel administrativo.</p>
+                                <p>Crie contas pelo painel administrativo.</p>
                             </div>
                         </div>
                     </div>
                 );
             };
-
-            // --- COMPONENTES PRINCIPAIS DO APP (AIChat, Toast e App) ---
 
             const AIChat = ({ data }) => {
                 const [messages, setMessages] = useState([
@@ -205,24 +186,21 @@
                     setTimeout(() => {
                         const totalExp = data.transactions.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
                         const balance = data.transactions.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0) - totalExp;
-                        
                         let responseText = '';
                         const lowerInput = userMsg.text.toLowerCase();
-
                         if(lowerInput.includes('gastei') || lowerInput.includes('despesa')) {
-                            responseText = `Você gastou R$ ${totalExp.toFixed(2)} até agora. Mantenha o controle!`;
+                            responseText = `Você gastou R$ ${totalExp.toFixed(2)} até agora.`;
                         } else if (lowerInput.includes('saldo') || lowerInput.includes('sobrou')) {
-                            responseText = `Seu saldo atual é R$ ${balance.toFixed(2)}. ${balance > 0 ? 'Positivo e operante!' : 'Cuidado, estamos no vermelho!'}`;
+                            responseText = `Seu saldo atual é R$ ${balance.toFixed(2)}.`;
                         } else {
-                            responseText = "Posso calcular totais ou saldo. Tente 'Quanto gastei?' ou 'Qual meu saldo?'.";
+                            responseText = "Posso calcular totais ou saldo. Tente 'Quanto gastei?'.";
                         }
-
                         setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: responseText }]);
                     }, 800);
                 };
 
                 return (
-                    <div className="flex flex-col h-[calc(100vh-140px)] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-140px)] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
                             {messages.map(msg => (
                                 <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -241,17 +219,17 @@
             };
 
             const Toast = ({ msg }) => (
-                <div className="fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce">
+                <div className="fixed bottom-24 md:bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce z-50">
                     <span className="text-green-400">✓</span> {msg}
                 </div>
             );
 
             const App = ({ user, data, onLogout }) => {
                 const [view, setView] = useState('dash');
-                const [localData, setLocalData] = useState(data);
+                const [localData, setLocalData] = useState(data || DEFAULT_DATA);
                 const [toast, setToast] = useState('');
                 
-                useEffect(() => { setLocalData(data); }, [data]);
+                useEffect(() => { if (data) setLocalData(data); }, [data]);
 
                 const [desc, setDesc] = useState('');
                 const [amount, setAmount] = useState('');
@@ -267,6 +245,11 @@
                 const [goalTitle, setGoalTitle] = useState('');
                 const [goalTarget, setGoalTarget] = useState('');
 
+                // GUARD CLAUSE
+                if (!localData || !localData.transactions) {
+                    return <div className="h-screen flex items-center justify-center text-slate-500">Carregando dados...</div>;
+                }
+
                 const saveToCloud = async (newData, msg = 'Salvo na nuvem!') => {
                     try {
                         const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'finance');
@@ -274,15 +257,18 @@
                         setToast(msg);
                         setTimeout(() => setToast(''), 3000);
                     } catch (e) {
-                        console.error("Erro ao salvar:", e);
-                        alert("Erro de conexão ao salvar.");
+                        console.error("ERRO AO SALVAR:", e);
+                        if (e.code === 'permission-denied') {
+                            alert("ERRO DE PERMISSÃO: O Firebase bloqueou o salvamento.");
+                        } else {
+                            alert("Erro ao salvar: " + e.message);
+                        }
                     }
                 };
 
                 const addTransaction = (e) => {
                     e.preventDefault();
                     if (!localData) return;
-
                     const count = hasInst ? parseInt(installments) : 1;
                     const val = parseFloat(amount) / count;
                     const newT = [];
@@ -297,7 +283,6 @@
                             amount: val, type, category: cat, date: d.toISOString()
                         });
                     }
-                    
                     const newData = { ...localData, transactions: [...localData.transactions, ...newT] };
                     saveToCloud(newData, 'Lançamento salvo!');
                     setDesc(''); setAmount(''); setHasInst(false); setInstallments(1); 
@@ -363,6 +348,8 @@
                 return (
                     <div className="flex h-screen bg-slate-50 font-sans">
                         {toast && <Toast msg={toast} />}
+                        
+                        {/* Sidebar (Desktop) */}
                         <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex">
                             <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2">
                                 <Icons.Cloud />
@@ -391,20 +378,21 @@
                             </div>
                         </aside>
 
-                        <main className="flex-1 overflow-y-auto">
-                            <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-8 sticky top-0 z-10">
-                                <h2 className="text-xl font-bold text-slate-800">
-                                    {view === 'dash' && 'Minhas Finanças (Cloud)'}
-                                    {view === 'ai' && 'Consultor Financeiro IA'}
-                                    {view === 'finances' && 'Lançamentos e Despesas'}
-                                    {view === 'goals' && 'Meus Objetivos de Economia'}
+                        {/* Main Content */}
+                        <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
+                            <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
+                                <h2 className="text-lg md:text-xl font-bold text-slate-800 truncate">
+                                    {view === 'dash' && 'Minhas Finanças'}
+                                    {view === 'ai' && 'Consultor Financeiro'}
+                                    {view === 'finances' && 'Lançamentos'}
+                                    {view === 'goals' && 'Meus Objetivos'}
                                     {view === 'reports' && 'Análise de Gastos'}
                                     {view === 'settings' && 'Meus Dados'}
                                 </h2>
-                                <button onClick={exportCSV} className="text-sm text-brand-600 font-medium hover:underline flex items-center gap-1"><Icons.Download /> Exportar</button>
+                                <button onClick={exportCSV} className="text-sm text-brand-600 font-medium hover:underline flex items-center gap-1"><Icons.Download /> <span className="hidden md:inline">Exportar</span></button>
                             </header>
 
-                            <div className="p-8 max-w-7xl mx-auto">
+                            <div className="p-4 md:p-8 max-w-7xl mx-auto">
                                 {view === 'ai' && <AIChat data={localData} />}
 
                                 {view === 'dash' && (
@@ -412,15 +400,15 @@
                                         <div className={`p-4 rounded-lg border-l-4 shadow-sm flex items-start gap-3 ${balance < 0 ? 'bg-red-50 border-red-500 text-red-700' : 'bg-blue-50 border-brand-500 text-brand-900'}`}>
                                             <div className="mt-1"><Icons.Bot /></div>
                                             <div>
-                                                <h3 className="font-bold text-sm">Status Financeiro</h3>
+                                                <h3 className="font-bold text-sm">Status</h3>
                                                 <p className="text-sm mt-1">
-                                                    {balance < 0 ? "Alerta Vermelho: Você está gastando mais do que ganha. Tente cortar itens supérfluos na aba 'Metas'." : 
-                                                    "Situação Confortável: Seu saldo está positivo. Que tal guardar um pouco na aba 'Metas & Sonhos'?"}
+                                                    {balance < 0 ? "Alerta: Gastos excederam ganhos." : 
+                                                    "Saldo positivo. Continue assim!"}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                                             <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
                                                 <p className="text-sm text-slate-500 font-bold uppercase mb-1">Ganhos</p>
                                                 <p className="text-2xl font-bold text-green-600">R$ {totalInc.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
@@ -437,7 +425,7 @@
 
                                         <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
                                             <h3 className="text-lg font-bold text-slate-700 mb-4">Fluxo Diário</h3>
-                                            <div className="h-80">
+                                            <div className="h-64 md:h-80">
                                                 {chartData.length > 0 ? (
                                                     <ResponsiveContainer width="100%" height="100%">
                                                         <AreaChart data={chartData}>
@@ -502,8 +490,8 @@
                                             </div>
                                         </div>
 
-                                        <div className="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden">
-                                            <table className="w-full text-left">
+                                        <div className="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden overflow-x-auto">
+                                            <table className="w-full text-left min-w-[500px]">
                                                 <thead className="bg-slate-50 border-b border-slate-200">
                                                     <tr><th className="p-4 text-xs font-bold text-slate-500 uppercase">Data</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Descrição</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Categoria</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Valor</th><th className="p-4 text-right"></th></tr>
                                                 </thead>
@@ -617,12 +605,42 @@
                                                 <p>Versão: FluxBlue Cloud v1.0 (Livre)</p>
                                                 <p className="font-mono mt-1">ID Usuário: {user.uid.slice(0,8)}...</p>
                                             </div>
+                                            <button onClick={onLogout} className="w-full md:hidden flex justify-center items-center text-sm text-red-500 border border-red-200 rounded p-3 mt-4 hover:bg-red-50">
+                                                Sair da Conta
+                                            </button>
                                         </div>
                                     </div>
                                 )}
 
                             </div>
                         </main>
+
+                        {/* Mobile Navigation Bar */}
+                        <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 mobile-nav-shadow z-50 flex justify-around items-end pb-safe safe-area-inset-bottom">
+                            <button onClick={()=>setView('dash')} className={`p-3 flex flex-col items-center gap-1 ${view==='dash' ? 'text-brand-600' : 'text-slate-400'}`}>
+                                <Icons.Home />
+                                <span className="text-[10px]">Início</span>
+                            </button>
+                            <button onClick={()=>setView('finances')} className={`p-3 flex flex-col items-center gap-1 ${view==='finances' ? 'text-brand-600' : 'text-slate-400'}`}>
+                                <Icons.Wallet />
+                                <span className="text-[10px]">Gastos</span>
+                            </button>
+                            
+                            <div className="relative -top-5">
+                                <button onClick={()=>setView('ai')} className="bg-brand-600 text-white rounded-full p-4 shadow-lg hover:bg-brand-700 transition-transform active:scale-95 border-4 border-slate-50">
+                                    <Icons.Bot />
+                                </button>
+                            </div>
+
+                            <button onClick={()=>setView('goals')} className={`p-3 flex flex-col items-center gap-1 ${view==='goals' ? 'text-brand-600' : 'text-slate-400'}`}>
+                                <Icons.Target />
+                                <span className="text-[10px]">Metas</span>
+                            </button>
+                            <button onClick={()=>setView('settings')} className={`p-3 flex flex-col items-center gap-1 ${view==='settings' ? 'text-brand-600' : 'text-slate-400'}`}>
+                                <Icons.Settings />
+                                <span className="text-[10px]">Config</span>
+                            </button>
+                        </nav>
                     </div>
                 );
             };
@@ -640,11 +658,13 @@
                                 if (snap.exists()) {
                                     setUserData(snap.data());
                                 } else {
-                                    // Se não existe, cria documento padrão
                                     const initial = { ...DEFAULT_DATA };
                                     setDoc(userDocRef, initial);
                                     setUserData(initial);
                                 }
+                                setLoading(false);
+                            }, (error) => {
+                                console.error("Erro ao carregar dados:", error);
                                 setLoading(false);
                             });
                             setUser(u);
@@ -659,14 +679,14 @@
                 }, []);
 
                 if (loading) return (
-                    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-                        <div className="loader border-t-brand-600 border-4 w-12 h-12"></div>
+                    <div className="min-h-screen flex items-center justify-center bg-slate-100 flex-col gap-4">
+                        <div className="loader w-10 h-10 border-4 border-t-blue-500 rounded-full"></div>
+                        <p className="text-slate-500 text-sm">Carregando sistema...</p>
                     </div>
                 );
 
                 if (!user) return <AuthScreen />;
 
-                // ACESSO DIRETO - SEM CHECAGENS
                 return <App user={user} data={userData} onLogout={()=>auth.signOut()} />;
             };
 
