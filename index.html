@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxBlue - Controle Financeiro</title>
+    <title>FluxBlue - Sistema Financeiro AI</title>
     
     <!-- React, ReactDOM, Babel, Tailwind -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -11,24 +11,37 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Charts & Utils -->
+    <!-- Libraries -->
     <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
     <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     
+    <!-- Google Generative AI (Gemini) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
+
     <!-- Font: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- FIREBASE MODULE LOADER -->
+    <!-- FIREBASE & AI LOADER -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+        import { GoogleGenerativeAI } from "@google/generative-ai";
 
         window.FirebaseSDK = {
             initializeApp,
-            auth: { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut },
-            firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc }
+            auth: { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser },
+            firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc }
         };
+        
+        window.GenAI = GoogleGenerativeAI; // Expose class to global
 
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
@@ -51,33 +64,26 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .card-shadow { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
-        .loader {
-            border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%;
-            width: 24px; height: 24px; animation: spin 1s linear infinite;
-        }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* Ajustes Mobile */
         .mobile-nav-shadow { box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05); }
     </style>
 </head>
 <body class="antialiased">
     <div id="root">
         <div class="h-screen flex items-center justify-center flex-col gap-4">
-            <div class="loader w-10 h-10 border-4 border-t-blue-500 rounded-full"></div>
-            <p class="text-slate-500 text-sm">Conectando ao FluxBlue...</p>
+            <div class="loader"></div>
+            <p class="text-slate-500 text-sm">Carregando FluxBlue AI...</p>
         </div>
     </div>
 
     <script type="text/babel">
         function startApp() {
             const { initializeApp } = window.FirebaseSDK;
-            const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } = window.FirebaseSDK.auth;
-            const { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc } = window.FirebaseSDK.firestore;
+            const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } = window.FirebaseSDK.auth;
+            const { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } = window.FirebaseSDK.firestore;
 
-            // --- SUAS CHAVES ---
             const firebaseConfig = {
                 apiKey: "AIzaSyDJXXw-re6gbm4ixWZEKZ5Cf06ACrUIoC8",
                 authDomain: "fluxoblue-44b5e.firebaseapp.com",
@@ -90,35 +96,241 @@
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
-            const appId = 'fluxblue-prod-v1'; 
+            const appId = 'fluxblue-prod-v2';
 
             const { useState, useEffect, useMemo, useRef } = React;
-            const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } = window.Recharts || {};
+            const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } = window.Recharts || {};
 
             // --- ÍCONES ---
             const Icons = {
+                Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+                Income: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+                Expense: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>,
+                Transactions: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>,
+                Debts: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 2v4"/><path d="M8 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>,
+                Categories: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h6"/></svg>,
+                Reports: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>,
+                Goals: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+                Market: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>,
+                Vehicles: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>,
+                Profile: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                AI: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><path d="M12 16v4"/><line x1="16" y1="11" x2="16" y2="7"/><line x1="8" y1="11" x2="8" y2="7"/></svg>,
+                Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+                Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+                Menu: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+                LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
                 Home: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
                 Wallet: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" /><path d="M3 5v14a2 2 0 0 0 2 2h16v-5" /><path d="M18 12a2 2 0 0 0 0 4h4v-4Z" /></svg>,
-                Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
-                Chart: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" /></svg>,
-                Bot: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/><path d="M12 16v4"/><line x1="16" y1="11" x2="16" y2="7"/><line x1="8" y1="11" x2="8" y2="7"/></svg>,
-                Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
-                LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-                Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
                 Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+                Send: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
                 Cloud: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19"/><path d="M20.97 12c.983-1.296 1.53-2.89 1.53-4.5 0-4.142-3.358-7.5-7.5-7.5-3.078 0-5.71 1.867-6.892 4.56a6.5 6.5 0 1 0-.578 12.94"/></svg>,
+                Paperclip: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>,
+                Crop: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/><path d="M4 14h2"/><path d="M14 4v2"/></svg>,
+                Rotate: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>,
+                Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+                Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            };
+
+            const BrandLogos = {
+                Netflix: () => <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8"><path d="M14.5 3L19 3V21H14.5V10.5L9.5 21H5V3H9.5V13.5L14.5 3Z" fill="#E50914"/></svg>,
+                YouTube: () => <svg viewBox="0 0 24 24" className="w-8 h-8"><path fill="#FF0000" d="M19.615 3.184c-2.369-.138-12.861-.138-15.23 0C1.297 3.407.03 6.64.03 12s1.267 8.623 4.355 8.816c2.369.138 12.861.138 15.23 0 3.088-.223 4.355-3.456 4.355-8.816s-1.267-8.623-4.355-8.816z"/><path fill="#FFF" d="M9.6 15.6l6.4-3.6-6.4-3.6z"/></svg>,
+                Spotify: () => <svg viewBox="0 0 24 24" className="w-8 h-8"><circle cx="12" cy="12" r="11" fill="#1DB954"/><path d="M16.9 16.2c-.2.3-.5.4-.8.2-2.3-1.4-5.3-1.7-8.8-.9-.3.1-.7-.1-.8-.4-.1-.3.1-.7.4-.8 3.8-.9 7.1-.5 9.7 1.1.3.1.4.5.3.8zm1.1-2.9c-.2.4-.7.5-1 .3-2.7-1.6-6.8-2.1-9.9-1.1-.4.1-.9-.1-1-.5-.1-.4.1-.9.5-1 3.6-1.1 8.2-.5 11.2 1.3.4.2.5.7.2 1zm.1-3c-3.2-1.9-8.6-2.1-11.7-1.1-.5.1-1-.2-1.1-.7-.2-.5.1-1 .7-1.1 3.6-1.1 9.6-.8 13.3 1.3.4.3.6.8.3 1.2-.3.4-.8.6-1.5.4z" fill="#FFF"/></svg>,
+                Amazon: () => <svg viewBox="0 0 24 24" className="w-8 h-8"><rect width="24" height="24" rx="4" fill="#00A8E1"/><path d="M12.5 13.5c-.8 0-1.5-.2-2-.5v2.8c0 .3-.2.5-.5.5s-.5-.2-.5-.5v-6c0-1.8 1.3-3.2 3.2-3.2s3.2 1.4 3.2 3.2v3.5c0 .3-.2.5-.5.5s-.5-.2-.5-.5v-3.5c0-1.2-.9-2.2-2.2-2.2s-2.2.9-2.2 2.2c0 .9.5 1.7 1.2 2 .2.1.2.4 0 .6-.2.1-.4.1-.6-.1zm-4.3 4.5c2.2 1.6 5.5 1.6 7.7 0 .2-.2.6-.1.7.1.2.2.1.6-.1.7-2.5 1.8-6.3 1.8-8.5 0-.2-.2-.2-.6 0-.8.1-.1.4-.2.6-.1z" fill="#FFF"/></svg>,
+                Disney: () => <svg viewBox="0 0 24 24" className="w-8 h-8"><rect width="24" height="24" rx="4" fill="#113CCF"/><path d="M18.5 10c-1.5 0-2.5 1-3 2 .5-1.5 2-2.5 3.5-2.5.5 0 1 .2 1 .5 0 .5-1 1-1.5 1.5-.5.5-1 1-1.5 2-.5 1-1 2.5-1 4-.5-1.5-1.5-2.5-3-2.5-.5 0-1 .2-1 .5 0 .5.5 1 1 1.5.5.5 1 1 1.5 1.5.5.5 1.5.5 2 .5 1.5 0 3-1 3.5-2.5.5 1.5 1 3 2.5 3 1.5 0 2.5-1 2.5-2.5 0-1.5-1-2.5-2.5-2.5-1 0-2 .5-2.5 1.5z" fill="#FFF" fillOpacity="0.8"/></svg>,
+                Apple: () => <svg viewBox="0 0 24 24" className="w-8 h-8"><path d="M18.7 19.6c-.6 1.7-1.5 3.4-2.8 3.4-1.2 0-1.6-.7-3-.7s-1.8.7-2.9.7c-1.2 0-2.3-1.8-3.1-3.1-1.6-2.5-1.4-7.6 2.3-9.3 1.2-.6 2.3-.4 3.1.2.8.5 1.7.6 2.7.2.9-.3 1.9-1.2 2.6-1.2 1 .1 3.8.4 5.3 2.6-4.9 2.1-4.1 8.5.1 10.1-.4 1.3-.9 2.5-1.5 3.5l-2.8-6.4zM15.5 5.5c.6-1.4 2.1-2.4 3.6-2.5.1 1.6-1 3.1-2 4-1 .9-2.7 1.6-3.8 1.5-.2-1.5.9-2.8 2.2-3z" fill="#000"/></svg>,
+                Default: () => <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs">?</div>
             };
 
             const DEFAULT_DATA = {
-                transactions: [
-                    { id: 1, type: 'income', desc: 'Depósito Inicial', amount: 0, date: new Date().toISOString(), category: 'Saldo Inicial' },
-                ],
+                transactions: [],
                 goals: [],
+                debts: [],
+                vehicles: [],
+                marketList: [],
+                subscriptions: [],
+                customCategories: ['Casa', 'Mercado', 'Lazer', 'Saúde', 'Transporte', 'Educação', 'Salário', 'Investimento'],
                 settings: { userName: 'Usuário' }
             };
 
-            // --- TELAS ---
+            // --- COMPONENTS AUXILIARES ---
+            const Toast = ({ msg }) => (
+                <div className="fixed bottom-24 md:bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce z-50">
+                    <span className="text-green-400">✓</span> {msg}
+                </div>
+            );
 
+            // --- AI & IMAGE LOGIC ---
+            const ImageEditor = ({ image, onSave, onCancel }) => {
+                const [rotation, setRotation] = useState(0);
+                const [caption, setCaption] = useState('');
+                const imgRef = useRef(null);
+
+                const handleSave = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = imgRef.current;
+                    
+                    if(rotation % 180 === 90) {
+                        canvas.width = img.naturalHeight;
+                        canvas.height = img.naturalWidth;
+                    } else {
+                        canvas.width = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                    }
+
+                    ctx.translate(canvas.width/2, canvas.height/2);
+                    ctx.rotate(rotation * Math.PI / 180);
+                    ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
+                    
+                    const finalImage = canvas.toDataURL('image/jpeg', 0.8);
+                    onSave(finalImage, caption);
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-4">
+                        <div className="relative w-full max-w-lg bg-black flex-1 flex items-center justify-center overflow-hidden">
+                            <img ref={imgRef} src={image} style={{transform: `rotate(${rotation}deg)`, transition: 'transform 0.3s'}} className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div className="w-full max-w-lg bg-slate-900 p-4 rounded-xl mt-4 space-y-4">
+                            <input value={caption} onChange={e=>setCaption(e.target.value)} placeholder="Adicionar legenda..." className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700 outline-none" />
+                            <div className="flex gap-2">
+                                <button onClick={()=>setRotation(r=>r-90)} className="p-3 bg-slate-800 text-white rounded-lg"><Icons.Rotate /></button>
+                                <button onClick={handleSave} className="flex-1 bg-brand-600 text-white py-3 rounded-lg font-bold flex justify-center gap-2"><Icons.Check /> Enviar</button>
+                                <button onClick={onCancel} className="p-3 bg-red-600 text-white rounded-lg"><Icons.Close /></button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const AIChat = ({ data, onAddTransaction }) => {
+                const [messages, setMessages] = useState([{ id: 1, type: 'bot', text: 'Olá! Sou sua IA FluxBlue. Envie uma foto de recibo ou escreva algo como "-50 em mercado".' }]);
+                const [input, setInput] = useState('');
+                const [loading, setLoading] = useState(false);
+                const [editingImage, setEditingImage] = useState(null); // base64 string
+                const fileInputRef = useRef(null);
+
+                // KEY EMBUTIDA
+                const apiKey = "AIzaSyA0Jmw_GMXFmkNL9x6XZfpjYPWzsJKUz6Y";
+
+                const processWithGemini = async (promptText, imageBase64 = null) => {
+                    try {
+                        const genAI = new window.GenAI.GoogleGenerativeAI(apiKey);
+                        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                        
+                        let prompt = `Você é um assistente financeiro. Analise o input e extraia uma transação JSON. 
+                        Hoje é ${new Date().toISOString()}.
+                        Responda APENAS o JSON no formato: { "desc": "string", "amount": number (positivo), "type": "expense" ou "income", "category": "string" }.
+                        Categorias disponíveis: ${data.customCategories.join(', ')}.
+                        Input do usuário: ${promptText}`;
+
+                        let result;
+                        if (imageBase64) {
+                            const imagePart = { inlineData: { data: imageBase64.split(',')[1], mimeType: "image/jpeg" } };
+                            result = await model.generateContent([prompt, imagePart]);
+                        } else {
+                            result = await model.generateContent(prompt);
+                        }
+                        
+                        const text = result.response.text();
+                        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                        return JSON.parse(jsonStr);
+                    } catch (e) {
+                        console.error("Gemini Error:", e);
+                        return null;
+                    }
+                };
+
+                const handleImageSelect = (e) => {
+                    if(e.target.files && e.target.files[0]){
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setEditingImage(ev.target.result);
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                };
+
+                const handleSend = async (imgData = null, caption = '') => {
+                    const textToSend = imgData ? caption : input;
+                    if(!textToSend && !imgData) return;
+
+                    const userMsg = { id: Date.now(), type: 'user', text: textToSend || (imgData ? '[Imagem Enviada]' : ''), image: imgData };
+                    setMessages(prev => [...prev, userMsg]);
+                    setInput('');
+                    setEditingImage(null);
+                    setLoading(true);
+
+                    // 1. Tenta Regex Simples (Offline/Rápido)
+                    if (!imgData) {
+                        const regex = /([+-]?)\s?(\d+([.,]\d+)?)\s+(?:em|no|na|para)?\s*(.*)/i;
+                        const match = textToSend.match(regex);
+                        if (match) {
+                            const val = parseFloat(match[2].replace(',', '.'));
+                            const isExpense = match[1] === '-' || textToSend.toLowerCase().includes('gastei') || textToSend.toLowerCase().includes('comprei');
+                            const desc = match[4];
+                            
+                            const newT = {
+                                id: Date.now(),
+                                desc: desc || 'Transação Rápida',
+                                amount: val,
+                                type: isExpense ? 'expense' : 'income',
+                                category: 'Geral',
+                                date: new Date().toISOString()
+                            };
+                            onAddTransaction(newT);
+                            setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: `Adicionado: ${isExpense?'-':'+'} R$ ${val} (${desc})` }]);
+                            setLoading(false);
+                            return;
+                        }
+                    }
+
+                    // 2. Tenta Gemini AI (Smart/Vision)
+                    if (apiKey) {
+                        const aiData = await processWithGemini(textToSend, imgData);
+                        if (aiData && aiData.amount) {
+                            const newT = {
+                                id: Date.now(),
+                                desc: aiData.desc || 'IA Transação',
+                                amount: aiData.amount,
+                                type: aiData.type || 'expense',
+                                category: aiData.category || 'Geral',
+                                date: new Date().toISOString()
+                            };
+                            onAddTransaction(newT);
+                            setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: `IA Identificou: ${newT.type==='expense'?'-':'+'} R$ ${newT.amount} (${newT.desc}) em ${newT.category}` }]);
+                        } else {
+                            setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: 'Não consegui identificar uma transação clara. Tente "50 em mercado" ou envie uma foto legível.' }]);
+                        }
+                    }
+                    setLoading(false);
+                };
+
+                return (
+                    <>
+                        {editingImage && <ImageEditor image={editingImage} onCancel={()=>setEditingImage(null)} onSave={handleSend} />}
+                        <div className="flex flex-col h-[calc(100vh-180px)] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                                {messages.map(msg => (
+                                    <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] p-3 rounded-xl text-sm ${msg.type === 'user' ? 'bg-brand-600 text-white rounded-br-none' : 'bg-white border text-slate-700 rounded-bl-none shadow-sm'}`}>
+                                            {msg.image && <img src={msg.image} className="rounded-lg mb-2 max-h-40" />}
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                ))}
+                                {loading && <div className="text-xs text-slate-400 text-center animate-pulse">Processando...</div>}
+                            </div>
+                            <div className="p-4 bg-white border-t flex gap-2 items-center">
+                                <button onClick={()=>fileInputRef.current.click()} className="p-2 text-slate-400 hover:text-brand-600"><Icons.Paperclip /></button>
+                                <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
+                                <input className="flex-1 border rounded-lg px-4 py-2 text-sm outline-none" placeholder="Digite ou envie foto..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend(null)} />
+                                <button onClick={()=>handleSend(null)} className="bg-brand-600 text-white p-2 rounded-lg"><Icons.Send /></button>
+                            </div>
+                        </div>
+                    </>
+                );
+            };
+
+            // --- LOGIN ---
             const AuthScreen = ({ onLogin }) => {
                 const [email, setEmail] = useState('');
                 const [password, setPassword] = useState('');
@@ -133,7 +345,7 @@
                         await signInWithEmailAndPassword(auth, email, password);
                     } catch (err) {
                         console.error(err);
-                        setError("Erro ao entrar: " + err.message);
+                        setError("Erro ao entrar. Verifique credenciais.");
                     } finally {
                         setLoading(false);
                     }
@@ -143,504 +355,387 @@
                     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
                         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-slate-200">
                             <div className="text-center mb-6">
-                                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">FluxBlue <span className="text-brand-600">Cloud</span></h1>
+                                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Flux<span className="text-brand-600">Blue</span></h1>
                                 <p className="text-slate-500 text-sm mt-1">Acesso Restrito</p>
                             </div>
-
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-200">{error}</div>}
-
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Email</label>
-                                    <input required type="email" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={email} onChange={e=>setEmail(e.target.value)} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Senha</label>
-                                    <input required type="password" className="w-full border border-slate-300 rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={password} onChange={e=>setPassword(e.target.value)} />
-                                </div>
-                                <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow-md transition-all flex justify-center items-center gap-2 mt-2">
-                                    {loading ? <div className="loader border-t-white border-2 h-4 w-4"></div> : 'Entrar'}
-                                </button>
+                                <div><label className="block text-xs font-semibold text-slate-600 mb-1">Email</label><input required type="email" className="w-full border rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={email} onChange={e=>setEmail(e.target.value)} /></div>
+                                <div><label className="block text-xs font-semibold text-slate-600 mb-1">Senha</label><input required type="password" className="w-full border rounded-lg p-3 text-slate-800 outline-none focus:border-brand-500" value={password} onChange={e=>setPassword(e.target.value)} /></div>
+                                <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow-md flex justify-center items-center gap-2 mt-2">{loading ? '...' : 'Entrar'}</button>
                             </form>
-                            <div className="mt-6 text-center text-xs text-slate-400">
-                                <p>Crie contas pelo painel administrativo.</p>
-                            </div>
                         </div>
                     </div>
                 );
             };
 
-            const AIChat = ({ data }) => {
-                const [messages, setMessages] = useState([
-                    { id: 1, type: 'bot', text: 'Olá! Sou sua IA FluxBlue. Seus dados agora estão na nuvem! Pergunte sobre seus gastos.' }
-                ]);
-                const [input, setInput] = useState('');
-
-                const handleSend = (e) => {
-                    e.preventDefault();
-                    if(!input.trim()) return;
-                    
-                    const userMsg = { id: Date.now(), type: 'user', text: input };
-                    setMessages(prev => [...prev, userMsg]);
-                    setInput('');
-
-                    setTimeout(() => {
-                        const totalExp = data.transactions.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
-                        const balance = data.transactions.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0) - totalExp;
-                        let responseText = '';
-                        const lowerInput = userMsg.text.toLowerCase();
-                        if(lowerInput.includes('gastei') || lowerInput.includes('despesa')) {
-                            responseText = `Você gastou R$ ${totalExp.toFixed(2)} até agora.`;
-                        } else if (lowerInput.includes('saldo') || lowerInput.includes('sobrou')) {
-                            responseText = `Seu saldo atual é R$ ${balance.toFixed(2)}.`;
-                        } else {
-                            responseText = "Posso calcular totais ou saldo. Tente 'Quanto gastei?'.";
-                        }
-                        setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: responseText }]);
-                    }, 800);
-                };
-
-                return (
-                    <div className="flex flex-col h-[calc(100vh-140px)] md:h-[calc(100vh-140px)] bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
-                            {messages.map(msg => (
-                                <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${msg.type === 'user' ? 'bg-brand-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none shadow-sm'}`}>
-                                        {msg.text}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-200 flex gap-2">
-                            <input className="flex-1 border border-slate-300 rounded-lg px-4 py-2 outline-none focus:border-brand-500" placeholder="Pergunte à IA..." value={input} onChange={e => setInput(e.target.value)} />
-                            <button className="bg-brand-600 text-white p-2 rounded-lg hover:bg-brand-700"><Icons.Send /></button>
-                        </form>
-                    </div>
-                );
-            };
-
-            const Toast = ({ msg }) => (
-                <div className="fixed bottom-24 md:bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-bounce z-50">
-                    <span className="text-green-400">✓</span> {msg}
-                </div>
-            );
-
+            // --- APP PRINCIPAL ---
             const App = ({ user, data, onLogout }) => {
-                const [view, setView] = useState('dash');
+                const [view, setView] = useState('dashboard');
                 const [localData, setLocalData] = useState(data || DEFAULT_DATA);
+                const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
                 const [toast, setToast] = useState('');
-                
-                useEffect(() => { if (data) setLocalData(data); }, [data]);
+                const [timeFilter, setTimeFilter] = useState('all'); 
+                const [showSubModal, setShowSubModal] = useState(false);
 
+                // CORREÇÃO CRÍTICA: Definição dos itens do menu dentro do App
+                const menuItems = [
+                    { id: 'dashboard', label: 'Dashboard', icon: <Icons.Dashboard /> },
+                    { id: 'income', label: 'Receitas', icon: <Icons.Income /> },
+                    { id: 'expense', label: 'Despesas', icon: <Icons.Expense /> },
+                    { id: 'transactions', label: 'Transações', icon: <Icons.Transactions /> },
+                    { id: 'debts', label: 'Dívidas', icon: <Icons.Debts /> },
+                    { id: 'categories', label: 'Categorias', icon: <Icons.Categories /> },
+                    { id: 'reports', label: 'Relatórios', icon: <Icons.Reports /> },
+                    { id: 'goals', label: 'Metas', icon: <Icons.Goals /> },
+                    { id: 'market', label: 'Mercado', icon: <Icons.Market /> },
+                    { id: 'vehicles', label: 'Veículos', icon: <Icons.Vehicles /> },
+                    { id: 'profile', label: 'Perfil', icon: <Icons.Profile /> },
+                    { id: 'ai', label: 'IA', icon: <Icons.AI /> },
+                ];
+
+                // Form States
                 const [desc, setDesc] = useState('');
                 const [amount, setAmount] = useState('');
-                const [cat, setCat] = useState('Casa');
-                const [txDate, setTxDate] = useState(() => {
-                    const now = new Date();
-                    const local = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
-                    return local.toISOString().split('T')[0];
-                });
-                const [installments, setInstallments] = useState(1);
-                const [hasInst, setHasInst] = useState(false);
                 const [type, setType] = useState('expense');
-                const [goalTitle, setGoalTitle] = useState('');
-                const [goalTarget, setGoalTarget] = useState('');
+                const [cat, setCat] = useState('Casa');
 
-                // GUARD CLAUSE
-                if (!localData || !localData.transactions) {
-                    return <div className="h-screen flex items-center justify-center text-slate-500">Carregando dados...</div>;
-                }
+                useEffect(() => { if (data) setLocalData(data); }, [data]);
 
-                const saveToCloud = async (newData, msg = 'Salvo na nuvem!') => {
+                if (!localData || !localData.transactions) return <div className="h-screen flex items-center justify-center text-slate-500">Carregando dados...</div>;
+
+                const saveToCloud = async (newData) => {
                     try {
-                        const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'finance');
-                        await setDoc(userDocRef, newData, { merge: true });
-                        setToast(msg);
-                        setTimeout(() => setToast(''), 3000);
-                    } catch (e) {
-                        console.error("ERRO AO SALVAR:", e);
-                        if (e.code === 'permission-denied') {
-                            alert("ERRO DE PERMISSÃO: O Firebase bloqueou o salvamento.");
-                        } else {
-                            alert("Erro ao salvar: " + e.message);
-                        }
-                    }
+                        const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'finance');
+                        await setDoc(ref, newData, { merge: true });
+                        setToast('Salvo!'); setTimeout(()=>setToast(''), 2000);
+                    } catch (e) { alert("Erro ao salvar."); }
                 };
 
-                const addTransaction = (e) => {
-                    e.preventDefault();
-                    if (!localData) return;
-                    const count = hasInst ? parseInt(installments) : 1;
-                    const val = parseFloat(amount) / count;
-                    const newT = [];
-                    const baseDate = new Date(txDate + 'T12:00:00');
-
-                    for(let i=0; i<count; i++){
-                        const d = new Date(baseDate);
-                        d.setMonth(baseDate.getMonth() + i);
-                        newT.push({
-                            id: Date.now() + i + Math.random(),
-                            desc: count > 1 ? `${desc} (${i+1}/${count})` : desc,
-                            amount: val, type, category: cat, date: d.toISOString()
-                        });
-                    }
-                    const newData = { ...localData, transactions: [...localData.transactions, ...newT] };
-                    saveToCloud(newData, 'Lançamento salvo!');
-                    setDesc(''); setAmount(''); setHasInst(false); setInstallments(1); 
+                const handleAIAddTransaction = (newTx) => {
+                    saveToCloud({ ...localData, transactions: [...localData.transactions, newTx] });
                 };
 
-                const delTransaction = (id) => {
-                    const newData = { ...localData, transactions: localData.transactions.filter(t => t.id !== id) };
-                    saveToCloud(newData, 'Item removido.');
+                const getFilteredTransactions = () => {
+                    if (timeFilter === 'all') return localData.transactions;
+                    const now = new Date();
+                    return localData.transactions.filter(t => {
+                        const d = new Date(t.date);
+                        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    });
                 };
 
-                const addGoal = (e) => {
-                    e.preventDefault();
-                    const newGoal = { id: Date.now(), title: goalTitle, target: parseFloat(goalTarget), saved: 0 };
-                    const newData = { ...localData, goals: [...(localData.goals || []), newGoal] };
-                    saveToCloud(newData, 'Nova meta criada!');
-                    setGoalTitle(''); setGoalTarget('');
-                };
-
-                const delGoal = (id) => {
-                    const newData = { ...localData, goals: localData.goals.filter(g => g.id !== id) };
-                    saveToCloud(newData, 'Meta removida.');
-                };
-
-                const addSavings = (id, val) => {
-                    const newData = {
-                        ...localData,
-                        goals: localData.goals.map(g => g.id === id ? { ...g, saved: g.saved + val } : g)
-                    };
-                    saveToCloud(newData, 'Economia registrada!');
-                };
-
-                const updateName = (newName) => {
-                    const newData = { ...localData, settings: { ...localData.settings, userName: newName } };
-                    saveToCloud(newData, 'Nome atualizado.');
-                }
-
-                const exportCSV = () => {
-                    let csv = "Data,Descricao,Categoria,Valor,Tipo\n";
-                    localData.transactions.forEach(r => csv += `${r.date.slice(0,10)},${r.desc},${r.category},${r.amount},${r.type}\n`);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8," + csv));
-                    link.setAttribute("download", "meus_gastos_cloud.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                };
-
-                const totalInc = localData.transactions.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0);
-                const totalExp = localData.transactions.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
+                const filteredTransactions = getFilteredTransactions();
+                const totalInc = filteredTransactions.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0);
+                const totalExp = filteredTransactions.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
                 const balance = totalInc - totalExp;
-
+                
                 const chartData = (() => {
                     const m = {};
-                    localData.transactions.forEach(t => {
-                        const k = t.date.slice(0,10); 
+                    filteredTransactions.forEach(t => {
+                        const k = t.date.slice(0,10);
                         if(!m[k]) m[k] = { name: new Date(t.date).toLocaleDateString().slice(0,5), receita: 0, despesa: 0 };
-                        if(t.type === 'income') m[k].receita += t.amount; else m[k].despesa += t.amount;
+                        if(t.type==='income') m[k].receita += t.amount; else m[k].despesa += t.amount;
                     });
-                    return Object.values(m).sort((a,b) => 0).slice(-10);
+                    return Object.values(m).sort((a,b)=>0).slice(-7);
                 })();
 
-                const PERSONAL_CATS = ['Casa', 'Mercado', 'Lazer', 'Saúde', 'Transporte', 'Educação', 'Salário', 'Investimento'];
-
-                return (
-                    <div className="flex h-screen bg-slate-50 font-sans">
-                        {toast && <Toast msg={toast} />}
-                        
-                        {/* Sidebar (Desktop) */}
-                        <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex">
-                            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2">
-                                <Icons.Cloud />
-                                <span className="text-white font-bold text-lg tracking-wide truncate">{localData.settings?.userName || 'Usuário'}</span>
-                            </div>
-                            <nav className="flex-1 py-4 px-3 space-y-1">
-                                {[
-                                    { id: 'dash', icon: <Icons.Home />, label: 'Visão Geral' },
-                                    { id: 'ai', icon: <Icons.Bot />, label: 'FluxBlue AI', highlight: true },
-                                    { id: 'finances', icon: <Icons.Wallet />, label: 'Meus Gastos' },
-                                    { id: 'goals', icon: <Icons.Target />, label: 'Metas & Sonhos' },
-                                    { id: 'reports', icon: <Icons.Chart />, label: 'Relatórios' },
-                                    { id: 'settings', icon: <Icons.Settings />, label: 'Configurações' },
-                                ].map(item => (
-                                    <button key={item.id} onClick={() => setView(item.id)} 
-                                        className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view === item.id ? 'bg-brand-600 text-white' : item.highlight ? 'text-brand-400 hover:bg-slate-800 hover:text-white' : 'hover:bg-slate-800 text-slate-400 hover:text-white'}`}>
-                                        <span className="mr-3">{item.icon}</span>
-                                        {item.label}
-                                    </button>
-                                ))}
-                            </nav>
-                            <div className="p-4 border-t border-slate-800">
-                                <button onClick={onLogout} className="flex items-center text-sm text-red-400 hover:text-red-300 px-2 transition w-full">
-                                    <span className="mr-2"><Icons.LogOut /></span> Sair
-                                </button>
-                            </div>
-                        </aside>
-
-                        {/* Main Content */}
-                        <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
-                            <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10">
-                                <h2 className="text-lg md:text-xl font-bold text-slate-800 truncate">
-                                    {view === 'dash' && 'Minhas Finanças'}
-                                    {view === 'ai' && 'Consultor Financeiro'}
-                                    {view === 'finances' && 'Lançamentos'}
-                                    {view === 'goals' && 'Meus Objetivos'}
-                                    {view === 'reports' && 'Análise de Gastos'}
-                                    {view === 'settings' && 'Meus Dados'}
-                                </h2>
-                                <button onClick={exportCSV} className="text-sm text-brand-600 font-medium hover:underline flex items-center gap-1"><Icons.Download /> <span className="hidden md:inline">Exportar</span></button>
-                            </header>
-
-                            <div className="p-4 md:p-8 max-w-7xl mx-auto">
-                                {view === 'ai' && <AIChat data={localData} />}
-
-                                {view === 'dash' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className={`p-4 rounded-lg border-l-4 shadow-sm flex items-start gap-3 ${balance < 0 ? 'bg-red-50 border-red-500 text-red-700' : 'bg-blue-50 border-brand-500 text-brand-900'}`}>
-                                            <div className="mt-1"><Icons.Bot /></div>
-                                            <div>
-                                                <h3 className="font-bold text-sm">Status</h3>
-                                                <p className="text-sm mt-1">
-                                                    {balance < 0 ? "Alerta: Gastos excederam ganhos." : 
-                                                    "Saldo positivo. Continue assim!"}
-                                                </p>
-                                            </div>
+                const renderContent = () => {
+                    switch(view) {
+                        case 'dashboard': 
+                            return (
+                                <div className="space-y-6 animate-fade-in">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-xl font-bold text-slate-800">Visão Geral</h2>
+                                        <select value={timeFilter} onChange={e=>setTimeFilter(e.target.value)} className="bg-white border rounded p-1 text-sm">
+                                            <option value="all">Tudo</option>
+                                            <option value="month">Este Mês</option>
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-white p-5 rounded-xl border shadow-sm">
+                                            <p className="text-xs text-slate-500 font-bold uppercase">Entradas</p>
+                                            <p className="text-2xl font-bold text-green-600">R$ {totalInc.toFixed(2)}</p>
                                         </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                                <p className="text-sm text-slate-500 font-bold uppercase mb-1">Ganhos</p>
-                                                <p className="text-2xl font-bold text-green-600">R$ {totalInc.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                                <p className="text-sm text-slate-500 font-bold uppercase mb-1">Gastos</p>
-                                                <p className="text-2xl font-bold text-red-600">R$ {totalExp.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                                <p className="text-sm text-slate-500 font-bold uppercase mb-1">Sobrou</p>
-                                                <p className={`text-2xl font-bold ${balance>=0 ? 'text-brand-600' : 'text-red-600'}`}>R$ {balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                            </div>
+                                        <div className="bg-white p-5 rounded-xl border shadow-sm">
+                                            <p className="text-xs text-slate-500 font-bold uppercase">Saídas</p>
+                                            <p className="text-2xl font-bold text-red-600">R$ {totalExp.toFixed(2)}</p>
                                         </div>
-
-                                        <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                            <h3 className="text-lg font-bold text-slate-700 mb-4">Fluxo Diário</h3>
-                                            <div className="h-64 md:h-80">
-                                                {chartData.length > 0 ? (
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <AreaChart data={chartData}>
-                                                            <defs>
-                                                                <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22c55e" stopOpacity={0.1}/><stop offset="95%" stopColor="#22c55e" stopOpacity={0}/></linearGradient>
-                                                                <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/><stop offset="95%" stopColor="#ef4444" stopOpacity={0}/></linearGradient>
-                                                            </defs>
-                                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                            <XAxis dataKey="name" />
-                                                            <YAxis />
-                                                            <Tooltip />
-                                                            <Area type="monotone" dataKey="receita" stroke="#22c55e" fillOpacity={1} fill="url(#colorInc)" name="Ganhos" />
-                                                            <Area type="monotone" dataKey="despesa" stroke="#ef4444" fillOpacity={1} fill="url(#colorExp)" name="Gastos" />
-                                                        </AreaChart>
-                                                    </ResponsiveContainer>
-                                                ) : <div className="h-full flex items-center justify-center text-slate-400">Adicione transações para ver o gráfico.</div>}
-                                            </div>
+                                        <div className="bg-white p-5 rounded-xl border shadow-sm">
+                                            <p className="text-xs text-slate-500 font-bold uppercase">Saldo</p>
+                                            <p className={`text-2xl font-bold ${balance>=0?'text-brand-600':'text-red-600'}`}>R$ {balance.toFixed(2)}</p>
                                         </div>
                                     </div>
-                                )}
-
-                                {view === 'finances' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                            <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Novo Lançamento</h3>
-                                            <form onSubmit={addTransaction} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                                <div className="md:col-span-3">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Data</label>
-                                                    <input required type="date" className="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:border-brand-500" value={txDate} onChange={e=>setTxDate(e.target.value)} />
-                                                </div>
-                                                <div className="md:col-span-3">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Descrição</label>
-                                                    <input required className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-brand-500 outline-none" value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Ex: Mercado" />
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Valor (R$)</label>
-                                                    <input required type="number" step="0.01" className="w-full border border-slate-300 rounded-lg p-2 text-sm focus:border-brand-500 outline-none" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0,00" />
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Tipo</label>
-                                                    <select className="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white focus:border-brand-500 outline-none" value={type} onChange={e=>setType(e.target.value)}>
-                                                        <option value="expense">Despesa (Gasto)</option>
-                                                        <option value="income">Receita (Ganho)</option>
-                                                    </select>
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <button className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 rounded-lg text-sm transition">Salvar</button>
-                                                </div>
-                                            </form>
-                                            
-                                            <div className="mt-4">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <input type="checkbox" id="inst" checked={hasInst} onChange={e=>setHasInst(e.target.checked)} className="rounded text-brand-600" />
-                                                    <label htmlFor="inst" className="text-sm text-slate-600">Parcelado? (Cartão)</label>
-                                                    {hasInst && <input type="number" min="2" max="60" className="w-16 border rounded p-1 text-sm" value={installments} onChange={e=>setInstallments(e.target.value)} />}
-                                                </div>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {PERSONAL_CATS.map(c => (
-                                                        <button key={c} onClick={()=>setCat(c)} className={`px-3 py-1 rounded-full text-xs border transition ${cat===c ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}>{c}</button>
-                                                    ))}
+                                    
+                                    {/* Subscriptions */}
+                                    <div className="bg-white p-5 rounded-xl border shadow-sm">
+                                        <div className="flex justify-between mb-4">
+                                            <h3 className="font-bold text-slate-800">Assinaturas / Streaming</h3>
+                                            <button onClick={()=>setShowSubModal(true)} className="text-xs text-brand-600 font-bold">+ Adicionar</button>
+                                        </div>
+                                        {showSubModal && (
+                                            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                                                <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
+                                                    <h3 className="font-bold text-lg mb-4">Adicionar Assinatura</h3>
+                                                    <div className="grid grid-cols-3 gap-3 mb-4">
+                                                        {['Netflix','YouTube','Spotify','Amazon','Disney','Apple'].map(s => (
+                                                            <button key={s} onClick={()=>{
+                                                                const p = prompt(`Valor mensal do ${s}:`);
+                                                                if(p) {
+                                                                    saveToCloud({...localData, subscriptions: [...(localData.subscriptions||[]), {id:Date.now(), name:s, price:parseFloat(p)}]});
+                                                                    setShowSubModal(false);
+                                                                }
+                                                            }} className="flex flex-col items-center justify-center p-2 border rounded hover:bg-slate-50">
+                                                                {React.createElement(BrandLogos[s] || BrandLogos.Default)}
+                                                                <span className="text-[10px] mt-1 font-medium">{s}</span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <button onClick={()=>{
+                                                        const n=prompt('Nome'); const p=prompt('Valor');
+                                                        if(n&&p) {
+                                                            saveToCloud({...localData, subscriptions: [...(localData.subscriptions||[]), {id:Date.now(), name:n, price:parseFloat(p)}]});
+                                                            setShowSubModal(false);
+                                                        }
+                                                    }} className="w-full bg-slate-100 text-slate-700 py-2 rounded text-sm font-bold hover:bg-slate-200">Outro Personalizado</button>
+                                                    <button onClick={()=>setShowSubModal(false)} className="w-full mt-2 text-red-500 text-xs hover:underline">Cancelar</button>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-xl border border-slate-200 card-shadow overflow-hidden overflow-x-auto">
-                                            <table className="w-full text-left min-w-[500px]">
-                                                <thead className="bg-slate-50 border-b border-slate-200">
-                                                    <tr><th className="p-4 text-xs font-bold text-slate-500 uppercase">Data</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Descrição</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Categoria</th><th className="p-4 text-xs font-bold text-slate-500 uppercase">Valor</th><th className="p-4 text-right"></th></tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-slate-100 text-sm">
-                                                    {localData.transactions.slice().reverse().map(t => (
-                                                        <tr key={t.id} className="hover:bg-slate-50">
-                                                            <td className="p-4 text-slate-500 font-mono">{new Date(t.date).toLocaleDateString()}</td>
-                                                            <td className="p-4 font-medium text-slate-800">{t.desc}</td>
-                                                            <td className="p-4"><span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600 border border-slate-200">{t.category}</span></td>
-                                                            <td className={`p-4 font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>R$ {t.amount.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                            <td className="p-4 text-right"><button onClick={()=>delTransaction(t.id)} className="text-slate-400 hover:text-red-500"><Icons.Trash /></button></td>
-                                                        </tr>
-                                                    ))}
-                                                    {localData.transactions.length===0 && <tr><td colSpan="5" className="p-8 text-center text-slate-400">Nenhum lançamento.</td></tr>}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {view === 'goals' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-                                            <h2 className="text-2xl font-bold mb-2">Por que não gastar?</h2>
-                                            <p className="opacity-90">Defina metas. Seus dados estão seguros na nuvem.</p>
-                                        </div>
-
-                                        <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                            <h3 className="font-bold text-slate-800 mb-4">Nova Meta</h3>
-                                            <form onSubmit={addGoal} className="flex gap-4 items-end">
-                                                <div className="flex-1">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Nome do Sonho</label>
-                                                    <input required className="w-full border rounded p-2 text-sm" placeholder="Ex: Viagem Disney" value={goalTitle} onChange={e=>setGoalTitle(e.target.value)} />
-                                                </div>
-                                                <div className="w-32">
-                                                    <label className="block text-xs font-bold text-slate-500 mb-1">Valor (R$)</label>
-                                                    <input required type="number" className="w-full border rounded p-2 text-sm" placeholder="0,00" value={goalTarget} onChange={e=>setGoalTarget(e.target.value)} />
-                                                </div>
-                                                <button className="bg-brand-600 text-white font-bold px-4 py-2 rounded text-sm hover:bg-brand-700">Criar</button>
-                                            </form>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {(localData.goals || []).map(g => {
-                                                const pct = Math.min((g.saved / g.target) * 100, 100);
+                                        )}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {(localData.subscriptions||[]).map(s=>{
+                                                // Find matching logo or use default
+                                                let Logo = BrandLogos.Default;
+                                                Object.keys(BrandLogos).forEach(key => {
+                                                    if(s.name.toLowerCase().includes(key.toLowerCase())) Logo = BrandLogos[key];
+                                                });
+                                                
                                                 return (
-                                                    <div key={g.id} className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div>
-                                                                <h3 className="font-bold text-lg text-slate-800">{g.title}</h3>
-                                                                <p className="text-xs text-slate-500">Meta: R$ {g.target.toLocaleString()}</p>
-                                                            </div>
-                                                            <button onClick={()=>delGoal(g.id)} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button>
+                                                    <div key={s.id} className="flex justify-between items-center p-3 bg-slate-50 rounded border">
+                                                        <div className="flex items-center gap-3">
+                                                            <Logo />
+                                                            <span className="font-medium text-sm">{s.name}</span>
                                                         </div>
-                                                        <div className="mb-2 flex justify-between text-sm">
-                                                            <span className="font-bold text-green-600">Guardado: R$ {g.saved.toLocaleString()}</span>
-                                                            <span className="font-bold text-brand-600">{pct.toFixed(0)}%</span>
-                                                        </div>
-                                                        <div className="w-full bg-slate-100 rounded-full h-3 mb-4">
-                                                            <div className="bg-brand-500 h-3 rounded-full progress-bar-striped transition-all duration-500" style={{width: `${pct}%`}}></div>
-                                                        </div>
-                                                        <div className="flex gap-2">
-                                                            <button onClick={()=>addSavings(g.id, 50)} className="flex-1 bg-green-50 text-green-700 border border-green-200 text-xs font-bold py-2 rounded hover:bg-green-100">+ R$ 50</button>
-                                                            <button onClick={()=>addSavings(g.id, 100)} className="flex-1 bg-green-50 text-green-700 border border-green-200 text-xs font-bold py-2 rounded hover:bg-green-100">+ R$ 100</button>
+                                                        <div className="flex gap-3 items-center">
+                                                            <span className="text-sm font-bold text-slate-600">R$ {s.price.toFixed(2)}</span>
+                                                            <button onClick={()=>saveToCloud({...localData, subscriptions: localData.subscriptions.filter(x=>x.id!==s.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button>
                                                         </div>
                                                     </div>
                                                 );
                                             })}
+                                            {(!localData.subscriptions || localData.subscriptions.length===0) && <span className="text-xs text-slate-400">Sem assinaturas.</span>}
                                         </div>
                                     </div>
-                                )}
 
-                                {view === 'reports' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <h1 className="text-2xl font-bold text-slate-800">Relatórios Detalhados</h1>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow h-80">
-                                                <h3 className="font-bold text-slate-800 mb-4">Gastos por Dia</h3>
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <BarChart data={chartData}>
-                                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                                        <XAxis dataKey="name" />
-                                                        <YAxis />
-                                                        <Tooltip />
-                                                        <Bar dataKey="despesa" fill="#ef4444" radius={[4, 4, 0, 0]} name="Gasto Diário" />
-                                                    </BarChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow">
-                                                <h3 className="font-bold text-slate-800 mb-4">Resumo</h3>
-                                                <ul className="space-y-3 text-sm">
-                                                    <li className="flex justify-between p-3 bg-slate-50 rounded"><span>Total Ganho</span> <span className="font-bold text-green-600">R$ {totalInc.toFixed(2)}</span></li>
-                                                    <li className="flex justify-between p-3 bg-slate-50 rounded"><span>Total Gasto</span> <span className="font-bold text-red-600">R$ {totalExp.toFixed(2)}</span></li>
-                                                    <li className="flex justify-between p-3 bg-brand-50 rounded border border-brand-100"><span>No Bolso (Saldo)</span> <span className="font-bold text-brand-700">R$ {balance.toFixed(2)}</span></li>
-                                                </ul>
-                                            </div>
-                                        </div>
+                                    <div className="bg-white p-5 rounded-xl border shadow-sm h-64">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={chartData}><XAxis dataKey="name"/><Tooltip/><Bar dataKey="receita" fill="#22c55e" name="Receita"/><Bar dataKey="despesa" fill="#ef4444" name="Despesa"/></BarChart>
+                                        </ResponsiveContainer>
                                     </div>
-                                )}
-
-                                {view === 'settings' && (
-                                    <div className="animate-fade-in max-w-lg">
-                                        <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow space-y-4">
-                                            <h3 className="font-bold text-slate-800 border-b border-slate-100 pb-2">Meus Dados</h3>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Nome de Exibição</label>
-                                                <input className="w-full border border-slate-300 rounded p-2 text-sm" value={localData.settings?.userName || ''} onChange={e => updateName(e.target.value)} />
-                                            </div>
-                                            <div className="pt-4 text-xs text-slate-400">
-                                                <p>Versão: FluxBlue Cloud v1.0 (Livre)</p>
-                                                <p className="font-mono mt-1">ID Usuário: {user.uid.slice(0,8)}...</p>
-                                            </div>
-                                            <button onClick={onLogout} className="w-full md:hidden flex justify-center items-center text-sm text-red-500 border border-red-200 rounded p-3 mt-4 hover:bg-red-50">
-                                                Sair da Conta
-                                            </button>
-                                        </div>
+                                </div>
+                            );
+                        case 'transactions':
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <h3 className="font-bold mb-4 text-slate-800">Nova Transação</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+                                        <input className="border p-2 rounded text-sm" placeholder="Descrição" value={desc} onChange={e=>setDesc(e.target.value)} />
+                                        <input type="number" className="border p-2 rounded text-sm" placeholder="Valor" value={amount} onChange={e=>setAmount(e.target.value)} />
+                                        <select className="border p-2 rounded text-sm" value={type} onChange={e=>setType(e.target.value)}><option value="expense">Despesa</option><option value="income">Receita</option></select>
+                                        <select className="border p-2 rounded text-sm" value={cat} onChange={e=>setCat(e.target.value)}>
+                                            {(localData.customCategories||['Geral']).map(c=><option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                        <button onClick={()=>{
+                                            if(!desc || !amount) return;
+                                            const newT = { id:Date.now(), desc, amount:parseFloat(amount), type, category:cat, date:new Date().toISOString() };
+                                            saveToCloud({...localData, transactions: [...localData.transactions, newT]});
+                                            setDesc(''); setAmount('');
+                                        }} className="bg-brand-600 text-white rounded font-bold text-sm col-span-2 md:col-span-1">Salvar</button>
                                     </div>
-                                )}
-
+                                    <div className="divide-y">
+                                        {localData.transactions.slice().reverse().map(t=>(
+                                            <div key={t.id} className="py-3 flex justify-between items-center text-sm">
+                                                <div><p className="font-medium">{t.desc}</p><p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()} • {t.category}</p></div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>R$ {t.amount.toFixed(2)}</span>
+                                                    <button onClick={()=>saveToCloud({...localData, transactions: localData.transactions.filter(x=>x.id!==t.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        case 'income':
+                        case 'expense':
+                            const list = localData.transactions.filter(t=>t.type===view);
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <h3 className="font-bold mb-4 capitalize">{view === 'income' ? 'Receitas' : 'Despesas'}</h3>
+                                    {list.length===0 ? <p className="text-slate-400">Vazio.</p> : list.map(t=>(
+                                        <div key={t.id} className="py-3 border-b flex justify-between">
+                                            <span>{t.desc}</span>
+                                            <span className="font-bold">R$ {t.amount.toFixed(2)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        case 'debts':
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <div className="flex justify-between mb-4"><h3 className="font-bold">Dívidas</h3><button onClick={()=>{
+                                        const n=prompt('Nome'); const v=prompt('Valor');
+                                        if(n&&v) saveToCloud({...localData, debts: [...(localData.debts||[]), {id:Date.now(), name:n, value:parseFloat(v)}]});
+                                    }} className="text-xs bg-red-100 text-red-600 px-3 py-1 rounded font-bold">+ Adicionar</button></div>
+                                    {(localData.debts||[]).map(d=>(
+                                        <div key={d.id} className="flex justify-between p-3 border-b"><span className="text-slate-700">{d.name}</span><div className="flex gap-3"><span className="font-bold text-red-600">R$ {d.value.toFixed(2)}</span><button onClick={()=>saveToCloud({...localData, debts:localData.debts.filter(x=>x.id!==d.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button></div></div>
+                                    ))}
+                                </div>
+                            );
+                        case 'market':
+                            const totalMarket = (localData.marketList||[]).filter(i=>i.check).reduce((a,b)=>a+b.price,0);
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <h3 className="font-bold mb-4">Mercado</h3>
+                                    <div className="flex gap-2 mb-4">
+                                        <input id="mItem" className="border rounded p-2 flex-1 text-sm" placeholder="Item" />
+                                        <input id="mPrice" type="number" className="border rounded p-2 w-20 text-sm" placeholder="R$" />
+                                        <button onClick={()=>{
+                                            const i=document.getElementById('mItem').value; const p=document.getElementById('mPrice').value;
+                                            if(i) { saveToCloud({...localData, marketList: [...(localData.marketList||[]), {id:Date.now(), item:i, price:parseFloat(p)||0, check:false}]}); document.getElementById('mItem').value=''; }
+                                        }} className="bg-brand-600 text-white px-3 rounded font-bold">+</button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {(localData.marketList||[]).map(m=>(
+                                            <div key={m.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded border">
+                                                <div className="flex items-center gap-2">
+                                                    <input type="checkbox" checked={m.check} onChange={()=>{
+                                                        const l = localData.marketList.map(x=>x.id===m.id?{...x, check:!x.check}:x);
+                                                        saveToCloud({...localData, marketList:l});
+                                                    }} />
+                                                    <span className={m.check?'line-through text-slate-400':''}>{m.item}</span>
+                                                </div>
+                                                <div className="flex gap-3">
+                                                    <span className="text-sm font-bold text-slate-600">R$ {m.price.toFixed(2)}</span>
+                                                    <button onClick={()=>saveToCloud({...localData, marketList:localData.marketList.filter(x=>x.id!==m.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                                        <span className="font-bold text-brand-700">Total Marcado: R$ {totalMarket.toFixed(2)}</span>
+                                        <button onClick={()=>{
+                                            if(totalMarket > 0 && confirm('Lançar esse total como despesa e limpar marcados?')) {
+                                                const newT = { id:Date.now(), desc:'Compra Mercado', amount:totalMarket, type:'expense', category:'Mercado', date:new Date().toISOString() };
+                                                const remainingList = localData.marketList.filter(i=>!i.check);
+                                                saveToCloud({...localData, transactions: [...localData.transactions, newT], marketList: remainingList});
+                                            }
+                                        }} className="text-xs bg-slate-800 text-white px-3 py-2 rounded font-bold">Finalizar Compra</button>
+                                    </div>
+                                </div>
+                            );
+                        case 'vehicles':
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <div className="flex justify-between mb-4"><h3 className="font-bold">Veículos</h3><button onClick={()=>{
+                                        const n=prompt('Veículo'); if(n) saveToCloud({...localData, vehicles: [...(localData.vehicles||[]), {id:Date.now(), name:n, expenses:0}]});
+                                    }} className="text-xs text-brand-600 font-bold">+ Novo</button></div>
+                                    {(localData.vehicles||[]).map(v=>(
+                                        <div key={v.id} className="p-4 border rounded-lg mb-2 flex justify-between items-center">
+                                            <div><p className="font-bold">{v.name}</p><p className="text-xs text-slate-500">Gastos: R$ {v.expenses.toFixed(2)}</p></div>
+                                            <button onClick={()=>{
+                                                const val=parseFloat(prompt('Valor do gasto'));
+                                                if(!isNaN(val)) {
+                                                    const updated = localData.vehicles.map(x=>x.id===v.id?{...x, expenses:x.expenses+val}:x);
+                                                    const addTx = confirm('Adicionar também ao extrato principal?');
+                                                    let newData = {...localData, vehicles:updated};
+                                                    if(addTx) newData.transactions = [...localData.transactions, {id:Date.now(), desc:`Gasto ${v.name}`, amount:val, type:'expense', category:'Transporte', date:new Date().toISOString()}];
+                                                    saveToCloud(newData);
+                                                }
+                                            }} className="bg-slate-100 text-xs font-bold px-3 py-1 rounded">Lançar Gasto</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        case 'categories':
+                            return (
+                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                    <h3 className="font-bold mb-4">Categorias</h3>
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                        {(localData.customCategories||[]).map(c=><span key={c} className="bg-slate-100 px-3 py-1 rounded-full text-sm">{c}</span>)}
+                                    </div>
+                                    <button onClick={()=>{const c=prompt('Nova Categoria'); if(c) saveToCloud({...localData, customCategories:[...(localData.customCategories||[]), c]})}} className="bg-brand-600 text-white px-4 py-2 rounded text-sm font-bold">Adicionar Categoria</button>
+                                </div>
+                            );
+                        case 'ai': return <AIChat data={localData} onAddTransaction={handleAIAddTransaction} />;
+                        case 'goals': return (
+                            <div className="space-y-4 animate-fade-in">
+                                <div className="bg-white p-6 rounded-xl border shadow-sm"><h3 className="font-bold mb-4">Metas</h3>
+                                <button onClick={()=>{const t=prompt('Título'); const v=prompt('Meta (R$)'); if(t&&v) saveToCloud({...localData, goals:[...(localData.goals||[]), {id:Date.now(), title:t, target:parseFloat(v), saved:0}]})}} className="bg-brand-600 text-white px-3 py-1 rounded text-sm mb-4">+ Nova Meta</button>
+                                <div className="grid md:grid-cols-2 gap-4">{(localData.goals||[]).map(g=>(
+                                    <div key={g.id} className="border p-4 rounded-xl">
+                                        <div className="flex justify-between mb-2"><span className="font-bold">{g.title}</span><span className="text-xs">R$ {g.saved} / {g.target}</span></div>
+                                        <div className="h-2 bg-slate-100 rounded-full mb-2"><div style={{width: Math.min((g.saved/g.target)*100, 100)+'%'}} className="h-full bg-brand-500 rounded-full"></div></div>
+                                        <button onClick={()=>{const val=prompt('Valor a guardar'); if(val) saveToCloud({...localData, goals: localData.goals.map(x=>x.id===g.id?{...x, saved:x.saved+parseFloat(val)}:x)})}} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded font-bold">Depositar</button>
+                                    </div>
+                                ))}</div></div>
                             </div>
+                        );
+                        case 'reports': return (
+                            <div className="space-y-6 animate-fade-in">
+                                <h1 className="text-2xl font-bold text-slate-800">Relatórios Detalhados</h1>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow h-80">
+                                        <h3 className="font-bold text-slate-800 mb-4">Gastos por Dia</h3>
+                                        <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="despesa" fill="#ef4444" radius={[4, 4, 0, 0]} name="Gasto Diário" /></BarChart></ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                        case 'profile': return (
+                            <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                                <h3 className="font-bold mb-4 text-slate-800">Perfil & Configurações</h3>
+                                <div className="mb-6">
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Nome de Exibição</label>
+                                    <input className="w-full border rounded p-2 text-sm mb-4" value={localData.settings.userName} onChange={e=>saveToCloud({...localData, settings: {...localData.settings, userName: e.target.value}})} />
+                                </div>
+                                <p className="text-xs text-slate-400 mb-6">ID: {user.uid}</p>
+                                <button onClick={onLogout} className="text-red-500 border border-red-200 px-4 py-2 rounded hover:bg-red-50 w-full text-sm font-bold">Sair da Conta</button>
+                            </div>
+                        );
+                        default: return renderDashboard();
+                    }
+                };
+
+                return (
+                    <div className="flex h-screen bg-slate-50 font-sans">
+                        {toast && <Toast msg={toast} />}
+                        <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex overflow-y-auto">
+                            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2 shrink-0 sticky top-0 z-10"><span className="text-white font-bold text-lg">FluxBlue</span></div>
+                            <nav className="flex-1 py-4 px-3 space-y-1">
+                                {menuItems.map(item => (
+                                    <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view===item.id ? 'bg-brand-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><span className="mr-3">{item.icon}</span>{item.label}</button>
+                                ))}
+                            </nav>
+                        </aside>
+                        <main className="flex-1 overflow-y-auto pb-24 md:pb-0 relative">
+                            {mobileMenuOpen && (
+                                <div className="fixed inset-0 bg-slate-900/95 z-50 p-6 animate-fade-in md:hidden overflow-y-auto">
+                                    <div className="flex justify-between items-center mb-8"><h2 className="text-white text-2xl font-bold">Menu</h2><button onClick={()=>setMobileMenuOpen(false)} className="text-white bg-slate-800 p-2 rounded-full font-bold">✕</button></div>
+                                    <div className="grid grid-cols-3 gap-4">{menuItems.map(item => (<button key={item.id} onClick={()=>{setView(item.id); setMobileMenuOpen(false);}} className="flex flex-col items-center justify-center bg-slate-800 p-4 rounded-xl text-slate-300 hover:bg-brand-600 hover:text-white transition"><div className="mb-2 text-brand-400">{item.icon}</div><span className="text-xs font-medium">{item.label}</span></button>))}</div>
+                                </div>
+                            )}
+                            <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm">
+                                <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2"><span className="md:hidden text-brand-600">{menuItems.find(i=>i.id===view)?.icon}</span>{menuItems.find(i=>i.id===view)?.label}</h2>
+                                <span className="text-xs bg-brand-50 text-brand-700 px-3 py-1 rounded-full font-bold border border-brand-100">{localData.settings.userName}</span>
+                            </header>
+                            <div className="p-4 md:p-8 max-w-7xl mx-auto">{renderContent()}</div>
                         </main>
-
-                        {/* Mobile Navigation Bar */}
-                        <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 mobile-nav-shadow z-50 flex justify-around items-end pb-safe safe-area-inset-bottom">
-                            <button onClick={()=>setView('dash')} className={`p-3 flex flex-col items-center gap-1 ${view==='dash' ? 'text-brand-600' : 'text-slate-400'}`}>
-                                <Icons.Home />
-                                <span className="text-[10px]">Início</span>
-                            </button>
-                            <button onClick={()=>setView('finances')} className={`p-3 flex flex-col items-center gap-1 ${view==='finances' ? 'text-brand-600' : 'text-slate-400'}`}>
-                                <Icons.Wallet />
-                                <span className="text-[10px]">Gastos</span>
-                            </button>
-                            
-                            <div className="relative -top-5">
-                                <button onClick={()=>setView('ai')} className="bg-brand-600 text-white rounded-full p-4 shadow-lg hover:bg-brand-700 transition-transform active:scale-95 border-4 border-slate-50">
-                                    <Icons.Bot />
-                                </button>
-                            </div>
-
-                            <button onClick={()=>setView('goals')} className={`p-3 flex flex-col items-center gap-1 ${view==='goals' ? 'text-brand-600' : 'text-slate-400'}`}>
-                                <Icons.Target />
-                                <span className="text-[10px]">Metas</span>
-                            </button>
-                            <button onClick={()=>setView('settings')} className={`p-3 flex flex-col items-center gap-1 ${view==='settings' ? 'text-brand-600' : 'text-slate-400'}`}>
-                                <Icons.Settings />
-                                <span className="text-[10px]">Config</span>
-                            </button>
+                        <nav className="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 mobile-nav-shadow z-40 flex justify-around items-end pb-safe px-2">
+                            <button onClick={()=>setView('dashboard')} className={`p-3 flex flex-col items-center gap-1 ${view==='dashboard'?'text-brand-600':'text-slate-400'}`}><Icons.Home /><span className="text-[10px] font-bold">Início</span></button>
+                            <button onClick={()=>setView('transactions')} className={`p-3 flex flex-col items-center gap-1 ${view==='transactions'?'text-brand-600':'text-slate-400'}`}><Icons.Transactions /><span className="text-[10px] font-bold">Lançar</span></button>
+                            <div className="relative -top-5"><button onClick={()=>setView('ai')} className="bg-brand-600 text-white rounded-full p-4 shadow-lg border-4 border-slate-50 active:scale-95 transition"><Icons.AI /></button></div>
+                            <button onClick={()=>setView('goals')} className={`p-3 flex flex-col items-center gap-1 ${view==='goals'?'text-brand-600':'text-slate-400'}`}><Icons.Goals /><span className="text-[10px] font-bold">Metas</span></button>
+                            <button onClick={()=>setMobileMenuOpen(true)} className="p-3 flex flex-col items-center gap-1 text-slate-400"><Icons.Menu /><span className="text-[10px] font-bold">Menu</span></button>
                         </nav>
                     </div>
                 );
@@ -650,55 +745,31 @@
                 const [user, setUser] = useState(null);
                 const [userData, setUserData] = useState(null);
                 const [loading, setLoading] = useState(true);
-                
                 useEffect(() => {
-                    const unsubAuth = onAuthStateChanged(auth, async (u) => {
+                    const unsub = onAuthStateChanged(auth, async (u) => {
                         if (u) {
-                            const userDocRef = doc(db, 'artifacts', appId, 'users', u.uid, 'data', 'finance');
-                            const unsubData = onSnapshot(userDocRef, (snap) => {
-                                if (snap.exists()) {
-                                    setUserData(snap.data());
-                                } else {
-                                    const initial = { ...DEFAULT_DATA };
-                                    setDoc(userDocRef, initial);
-                                    setUserData(initial);
-                                }
-                                setLoading(false);
-                            }, (error) => {
-                                console.error("Erro ao carregar dados:", error);
+                            const ref = doc(db, 'artifacts', appId, 'users', u.uid, 'data', 'finance');
+                            const unsubSnap = onSnapshot(ref, (s) => {
+                                if (s.exists()) setUserData(s.data());
+                                else { const d = { ...DEFAULT_DATA }; setDoc(ref, d); setUserData(d); }
                                 setLoading(false);
                             });
                             setUser(u);
-                            return () => unsubData();
-                        } else {
-                            setUser(null);
-                            setUserData(null);
-                            setLoading(false);
-                        }
+                            return () => unsubSnap();
+                        } else { setUser(null); setLoading(false); }
                     });
-                    return () => unsubAuth();
+                    return () => unsub();
                 }, []);
-
-                if (loading) return (
-                    <div className="min-h-screen flex items-center justify-center bg-slate-100 flex-col gap-4">
-                        <div className="loader w-10 h-10 border-4 border-t-blue-500 rounded-full"></div>
-                        <p className="text-slate-500 text-sm">Carregando sistema...</p>
-                    </div>
-                );
-
+                if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><div className="loader"></div></div>;
                 if (!user) return <AuthScreen />;
-
                 return <App user={user} data={userData} onLogout={()=>auth.signOut()} />;
             };
 
             ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
         }
 
-        if (window.FirebaseSDK) {
-            startApp();
-        } else {
-            window.addEventListener('firebase-ready', startApp);
-        }
+        if (window.FirebaseSDK) startApp();
+        else window.addEventListener('firebase-ready', startApp);
     </script>
 </body>
 </html>
