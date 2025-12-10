@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxBlue AI - Final</title>
+    <title>FluxBlue AI - Stable</title>
     
     <!-- React & Tailwind -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -32,15 +32,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
         import { GoogleGenerativeAI } from "@google/generative-ai";
 
         window.FirebaseSDK = {
             initializeApp,
             auth: { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser },
-            firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc }
+            firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc }
         };
         
+        // Expose the CLASS directly
         window.GenAI = GoogleGenerativeAI; 
 
         window.dispatchEvent(new Event('firebase-ready'));
@@ -53,7 +54,8 @@
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: { 
                         brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 900: '#1e3a8a' },
-                        slate: { 850: '#1e293b', 900: '#0f172a' }
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        whatsapp: { 500: '#25D366', 600: '#128C7E' }
                     }
                 }
             }
@@ -69,6 +71,10 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .mobile-nav-shadow { box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05); }
         canvas { touch-action: none; }
+        
+        /* Floating Whatsapp Button Animation */
+        .whatsapp-float { animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
     </style>
 </head>
 <body class="antialiased">
@@ -109,7 +115,13 @@
             Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
             Close: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
             Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Alert: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+            Trophy: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>,
+            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+            Admin: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>,
+            Whatsapp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
         };
 
         const BrandLogos = {
@@ -130,13 +142,14 @@
             marketList: [],
             subscriptions: [],
             customCategories: ['Casa', 'Mercado', 'Lazer', 'Saúde', 'Transporte', 'Educação', 'Salário', 'Investimento'],
-            settings: { userName: 'Usuário', geminiKey: '' }
+            settings: { userName: 'Usuário', geminiKey: '' },
+            subscription: { active: false, expiresAt: null }
         };
 
         function startApp() {
             const { initializeApp } = window.FirebaseSDK;
             const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, deleteUser } = window.FirebaseSDK.auth;
-            const { getFirestore, doc, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } = window.FirebaseSDK.firestore;
+            const { getFirestore, doc, onSnapshot, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc } = window.FirebaseSDK.firestore;
 
             const firebaseConfig = {
                 apiKey: "AIzaSyDJXXw-re6gbm4ixWZEKZ5Cf06ACrUIoC8",
@@ -150,10 +163,10 @@
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
-            const appId = 'fluxblue-prod-v3';
+            const appId = 'fluxblue-prod-v4';
 
             const { useState, useEffect, useMemo, useRef } = React;
-            const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } = window.Recharts || {};
+            const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } = window.Recharts || {};
 
             // --- COMPONENTS AUXILIARES ---
             const Toast = ({ msg }) => (
@@ -162,7 +175,70 @@
                 </div>
             );
 
-            // --- AI & IMAGE LOGIC ---
+            // --- PAINEL ADMIN ---
+            const AdminPanel = ({ onClose }) => {
+                const [users, setUsers] = React.useState([]);
+                const [loading, setLoading] = React.useState(true);
+
+                React.useEffect(() => {
+                    const fetchUsers = async () => {
+                        try {
+                            const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public_users'));
+                            const list = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                            setUsers(list);
+                        } catch (e) {
+                            console.error("Erro admin:", e);
+                        } finally {
+                            setLoading(false);
+                        }
+                    };
+                    fetchUsers();
+                }, []);
+
+                const toggleStatus = async (uid, currentStatus) => {
+                    try {
+                        const nextMonth = new Date();
+                        nextMonth.setDate(nextMonth.getDate() + 30);
+                        
+                        await updateDoc(doc(db, 'artifacts', appId, 'public_users', uid), { active: !currentStatus });
+                        await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'data', 'finance'), {
+                            subscription: { active: !currentStatus, expiresAt: !currentStatus ? nextMonth.toISOString() : null }
+                        }, { merge: true });
+
+                        setUsers(users.map(u => u.id === uid ? { ...u, active: !currentStatus } : u));
+                        alert(`Usuário ${!currentStatus ? 'ATIVADO' : 'BLOQUEADO'}`);
+                    } catch (e) { alert("Erro: " + e.message); }
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900 z-[100] p-8 overflow-y-auto">
+                        <div className="max-w-4xl mx-auto">
+                            <div className="flex justify-between items-center mb-8">
+                                <h1 className="text-3xl font-bold text-white flex items-center gap-2"><Icons.Admin /> Painel Admin</h1>
+                                <button onClick={onClose} className="text-slate-400 hover:text-white"><Icons.Close /></button>
+                            </div>
+                            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                                <h2 className="text-xl font-bold text-white mb-4">Clientes Cadastrados</h2>
+                                {loading ? <p className="text-slate-400">Carregando...</p> : (
+                                    <div className="space-y-2">
+                                        {users.map(u => (
+                                            <div key={u.id} className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+                                                <div><p className="font-bold text-white">{u.email}</p><p className="text-xs text-slate-400">{u.id}</p></div>
+                                                <button onClick={() => toggleStatus(u.id, u.active)} className={`px-4 py-2 rounded text-xs font-bold ${u.active ? 'bg-red-600' : 'bg-green-600'} text-white`}>
+                                                    {u.active ? 'Bloquear' : 'Aprovar'}
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {users.length === 0 && <p className="text-slate-500">Nenhum usuário.</p>}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- EDITOR DE IMAGEM ---
             const ImageEditor = ({ image, onSave, onCancel }) => {
                 const [rotation, setRotation] = useState(0);
                 const [caption, setCaption] = useState('');
@@ -177,13 +253,8 @@
                     img.onload = () => {
                         const canvas = canvasRef.current;
                         const ctx = canvas.getContext('2d');
-                        if (rotation % 180 === 90) {
-                            canvas.width = img.naturalHeight;
-                            canvas.height = img.naturalWidth;
-                        } else {
-                            canvas.width = img.naturalWidth;
-                            canvas.height = img.naturalHeight;
-                        }
+                        if (rotation % 180 === 90) { canvas.width = img.naturalHeight; canvas.height = img.naturalWidth; } 
+                        else { canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; }
                         ctx.clearRect(0,0, canvas.width, canvas.height);
                         ctx.save();
                         ctx.translate(canvas.width/2, canvas.height/2);
@@ -198,71 +269,35 @@
                     const rect = canvasRef.current.getBoundingClientRect();
                     const scaleX = canvasRef.current.width / rect.width;
                     const scaleY = canvasRef.current.height / rect.height;
-                    
-                    if (e.touches) {
-                        return { 
-                            x: (e.touches[0].clientX - rect.left) * scaleX, 
-                            y: (e.touches[0].clientY - rect.top) * scaleY 
-                        };
-                    }
-                    return { 
-                        x: (e.clientX - rect.left) * scaleX, 
-                        y: (e.clientY - rect.top) * scaleY 
-                    };
+                    if (e.touches) return { x: (e.touches[0].clientX - rect.left) * scaleX, y: (e.touches[0].clientY - rect.top) * scaleY };
+                    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
                 };
 
-                const startDraw = (e) => {
-                    setIsDrawing(true);
-                    lastPos.current = getPos(e);
-                };
-
+                const startDraw = (e) => { setIsDrawing(true); lastPos.current = getPos(e); };
                 const draw = (e) => {
                     if (!isDrawing) return;
                     e.preventDefault(); 
                     const ctx = canvasRef.current.getContext('2d');
                     const pos = getPos(e);
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(lastPos.current.x, lastPos.current.y);
-                    ctx.lineTo(pos.x, pos.y);
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = Math.max(5, canvasRef.current.width / 200); 
-                    ctx.lineCap = 'round';
-                    ctx.stroke();
-                    
+                    ctx.beginPath(); ctx.moveTo(lastPos.current.x, lastPos.current.y); ctx.lineTo(pos.x, pos.y);
+                    ctx.strokeStyle = 'red'; ctx.lineWidth = Math.max(5, canvasRef.current.width / 200); ctx.lineCap = 'round'; ctx.stroke();
                     lastPos.current = pos;
                 };
-
-                const stopDraw = () => {
-                    setIsDrawing(false);
-                };
-
-                const handleSave = () => {
-                    const finalImage = canvasRef.current.toDataURL('image/jpeg', 0.8);
-                    onSave(finalImage, caption);
-                };
+                const stopDraw = () => setIsDrawing(false);
+                const handleSave = () => { onSave(canvasRef.current.toDataURL('image/jpeg', 0.8), caption); };
 
                 return (
                     <div className="fixed inset-0 bg-black/90 z-[60] flex flex-col items-center justify-center p-4">
                         <div className="relative w-full max-w-lg bg-black flex-1 flex items-center justify-center overflow-hidden border border-slate-700 rounded-lg">
-                            <canvas 
-                                ref={canvasRef}
-                                className="max-h-full max-w-full object-contain touch-none"
-                                onMouseDown={startDraw}
-                                onMouseMove={draw}
-                                onMouseUp={stopDraw}
-                                onMouseOut={stopDraw}
-                                onTouchStart={startDraw}
-                                onTouchMove={draw}
-                                onTouchEnd={stopDraw}
-                            />
+                            <canvas ref={canvasRef} className="max-h-full max-w-full object-contain touch-none"
+                                onMouseDown={startDraw} onMouseMove={draw} onMouseUp={stopDraw} onMouseOut={stopDraw} onTouchStart={startDraw} onTouchMove={draw} onTouchEnd={stopDraw} />
                         </div>
                         <div className="w-full max-w-lg bg-slate-900 p-4 rounded-xl mt-4 space-y-4">
-                            <p className="text-xs text-slate-400 text-center">Use o dedo/mouse para circular valores ou desenhar.</p>
+                            <p className="text-xs text-slate-400 text-center">Use o dedo/mouse para circular valores.</p>
                             <input value={caption} onChange={e=>setCaption(e.target.value)} placeholder="Legenda (opcional)..." className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700 outline-none" />
                             <div className="flex gap-2">
                                 <button onClick={()=>setRotation(r=>r-90)} className="p-3 bg-slate-800 text-white rounded-lg flex flex-col items-center text-[10px]"><Icons.Rotate /> Girar (Limpa)</button>
-                                <button onClick={handleSave} className="flex-1 bg-brand-600 text-white py-3 rounded-lg font-bold flex justify-center gap-2"><Icons.Check /> Enviar para IA</button>
+                                <button onClick={handleSave} className="flex-1 bg-brand-600 text-white py-3 rounded-lg font-bold flex justify-center gap-2"><Icons.Check /> Enviar p/ IA</button>
                                 <button onClick={onCancel} className="p-3 bg-red-600 text-white rounded-lg"><Icons.Close /></button>
                             </div>
                         </div>
@@ -270,29 +305,20 @@
                 );
             };
 
+            // --- AI CHAT ---
             const AIChat = ({ data, onAddTransaction }) => {
-                const [messages, setMessages] = useState([{ id: 1, type: 'bot', text: 'Olá! Envie uma foto ou escreva. Se desenhar na foto, darei prioridade ao que foi marcado.' }]);
+                const [messages, setMessages] = useState([{ id: 1, type: 'bot', text: 'Olá! Envie uma foto de comprovante ou escreva (ex: "-50 em mercado").' }]);
                 const [input, setInput] = useState('');
                 const [loading, setLoading] = useState(false);
                 const [editingImage, setEditingImage] = useState(null); 
                 const fileInputRef = useRef(null);
-
                 const apiKey = "AIzaSyA0Jmw_GMXFmkNL9x6XZfpjYPWzsJKUz6Y";
 
                 const processWithGemini = async (promptText, imageBase64 = null) => {
                     try {
                         const genAI = new window.GenAI(apiKey); 
-                        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                        
-                        let prompt = `Você é um assistente financeiro FluxBlue.
-                        Analise a imagem e o texto.
-                        CRITICO: Se houver círculos vermelhos, setas ou marcações na imagem, FOQUE APENAS neles para extrair o valor.
-                        Se for um recibo, extraia o total. Se for anotação manual, leia o texto.
-                        Hoje é ${new Date().toISOString()}.
-                        Responda APENAS o JSON: { "desc": "string", "amount": number (positivo), "type": "expense" ou "income", "category": "string" }.
-                        Categorias: ${data.customCategories.join(', ')}.
-                        Input: ${promptText}`;
-
+                        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-09-2025" });
+                        let prompt = `Analise a imagem e texto. Extraia transação JSON: { "desc": "string", "amount": number, "type": "expense"|"income", "category": "string" }. Categorias: ${data.customCategories.join(', ')}. Hoje: ${new Date().toISOString()}. Input: ${promptText}`;
                         let result;
                         if (imageBase64) {
                             const imagePart = { inlineData: { data: imageBase64.split(',')[1], mimeType: "image/jpeg" } };
@@ -300,7 +326,6 @@
                         } else {
                             result = await model.generateContent(prompt);
                         }
-                        
                         const text = result.response.text();
                         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
                         return JSON.parse(jsonStr);
@@ -322,7 +347,6 @@
                 const handleSend = async (imgData = null, caption = '') => {
                     const textToSend = imgData ? caption : input;
                     if(!textToSend && !imgData) return;
-
                     const userMsg = { id: Date.now(), type: 'user', text: textToSend || (imgData ? '[Imagem]' : ''), image: imgData };
                     setMessages(prev => [...prev, userMsg]);
                     setInput('');
@@ -335,15 +359,7 @@
                         if (match) {
                             const val = parseFloat(match[2].replace(',', '.'));
                             const isExpense = match[1] === '-' || textToSend.toLowerCase().includes('gastei');
-                            
-                            const newT = {
-                                id: Date.now(),
-                                desc: match[4] || 'Rápido',
-                                amount: val,
-                                type: isExpense ? 'expense' : 'income',
-                                category: 'Geral',
-                                date: new Date().toISOString()
-                            };
+                            const newT = { id: Date.now(), desc: match[4] || 'Rápido', amount: val, type: isExpense ? 'expense' : 'income', category: 'Geral', date: new Date().toISOString() };
                             onAddTransaction(newT);
                             setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: `Adicionado: R$ ${val}` }]);
                             setLoading(false);
@@ -353,20 +369,12 @@
 
                     const aiData = await processWithGemini(textToSend, imgData);
                     if (aiData && aiData.amount) {
-                        const newT = {
-                            id: Date.now(),
-                            desc: aiData.desc || 'IA Transação',
-                            amount: aiData.amount,
-                            type: aiData.type || 'expense',
-                            category: aiData.category || 'Geral',
-                            date: new Date().toISOString()
-                        };
+                        const newT = { id: Date.now(), desc: aiData.desc || 'IA Transação', amount: aiData.amount, type: aiData.type || 'expense', category: aiData.category || 'Geral', date: new Date().toISOString() };
                         onAddTransaction(newT);
                         setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: `IA: Adicionei ${newT.type==='expense'?'Despesa':'Receita'} de R$ ${newT.amount} (${newT.desc}).` }]);
                     } else {
-                        setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: 'Não entendi. Tente desenhar um círculo vermelho em volta do valor na foto.' }]);
+                        setMessages(prev => [...prev, { id: Date.now()+1, type: 'bot', text: 'Não entendi. Tente desenhar um círculo vermelho no valor.' }]);
                     }
-                    
                     setLoading(false);
                 };
 
@@ -383,12 +391,12 @@
                                         </div>
                                     </div>
                                 ))}
-                                {loading && <div className="text-xs text-slate-400 text-center animate-pulse">Analisando imagem...</div>}
+                                {loading && <div className="text-xs text-slate-400 text-center animate-pulse">Analisando...</div>}
                             </div>
                             <div className="p-4 bg-white border-t flex gap-2 items-center">
                                 <button onClick={()=>fileInputRef.current.click()} className="p-2 text-slate-400 hover:text-brand-600 active:scale-95 transition"><Icons.Paperclip /></button>
                                 <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={handleImageSelect} />
-                                <input className="flex-1 border rounded-lg px-4 py-2 text-sm outline-none" placeholder="Digite ou envie foto..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend(null)} />
+                                <input className="flex-1 border rounded-lg px-4 py-2 text-sm outline-none" placeholder="Digite..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter' && handleSend(null)} />
                                 <button onClick={()=>handleSend(null)} className="bg-brand-600 text-white p-2 rounded-lg"><Icons.Send /></button>
                             </div>
                         </div>
@@ -401,38 +409,56 @@
                 const [password, setPassword] = useState('');
                 const [error, setError] = useState('');
                 const [loading, setLoading] = useState(false);
+                const [isAdminMode, setIsAdminMode] = useState(false);
+                const ADMIN_EMAIL = "salatielvitorino45@gmail.com";
+                const ADMIN_PASS = "p1p2p3p4P@";
 
                 const handleSubmit = async (e) => {
-                    e.preventDefault();
-                    setError('');
-                    setLoading(true);
-                    try {
-                        await signInWithEmailAndPassword(auth, email, password);
-                    } catch (err) {
-                        console.error(err);
-                        setError("Erro ao entrar. Verifique credenciais.");
-                    } finally {
-                        setLoading(false);
-                    }
+                    e.preventDefault(); setError(''); setLoading(true);
+                    if (email === ADMIN_EMAIL && password === ADMIN_PASS) { setIsAdminMode(true); setLoading(false); return; }
+                    try { 
+                        try { await signInWithEmailAndPassword(auth, email, password); } 
+                        catch (e) { 
+                             if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
+                                 const uc=await createUserWithEmailAndPassword(auth, email, password);
+                                 await setDoc(doc(db,'artifacts',appId,'public_users',uc.user.uid),{email:uc.user.email,active:false});
+                                 await setDoc(doc(db,'artifacts',appId,'users',uc.user.uid,'data','finance'),{...DEFAULT_DATA});
+                             } else throw e;
+                        }
+                    } 
+                    catch (err) { setError(err.message); } finally { setLoading(false); }
                 };
+
+                if (isAdminMode) return <AdminPanel onClose={() => setIsAdminMode(false)} db={db} appId={appId} />;
 
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
                         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-slate-200">
-                            <div className="text-center mb-6">
-                                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Flux<span className="text-brand-600">Blue</span></h1>
-                                <p className="text-slate-500 text-sm mt-1">Acesso Restrito</p>
-                            </div>
+                            <div className="text-center mb-6"><h1 className="text-3xl font-bold text-slate-800">Flux<span className="text-brand-600">Blue</span></h1><p className="text-slate-500 text-sm">Acesso ao Sistema</p></div>
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-200">{error}</div>}
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <input required type="email" className="w-full border rounded-lg p-3 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
                                 <input required type="password" className="w-full border rounded-lg p-3 text-sm" placeholder="Senha" value={password} onChange={e=>setPassword(e.target.value)} />
-                                <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow">{loading ? '...' : 'Entrar'}</button>
+                                <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 rounded-lg shadow">{loading ? '...' : 'Entrar / Cadastrar'}</button>
                             </form>
+                            <div className="mt-6 text-center text-xs text-slate-400"><p>Se não tiver conta, ela será criada.</p></div>
                         </div>
                     </div>
                 );
             };
+
+            const Paywall = ({ user }) => (
+                <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 font-sans text-center">
+                    <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden p-8">
+                        <div className="mx-auto bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mb-6"><Icons.Lock className="text-red-600 w-8 h-8" /></div>
+                        <h2 className="text-2xl font-bold text-slate-800 mb-2">Assinatura Expirada</h2>
+                        <p className="text-slate-600 mb-6 text-sm">Seu acesso acabou. Renove para continuar.</p>
+                        <a href="https://pay.cakto.com.br/scbctc9_679715" target="_blank" className="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition mb-3">Renovar Agora</a>
+                        <button onClick={()=>window.location.reload()} className="text-brand-600 text-xs font-bold hover:underline">Já paguei</button>
+                        <div className="mt-6 border-t pt-4"><button onClick={() => signOut(auth)} className="text-xs text-slate-400 hover:text-slate-600">Sair ({user.email})</button></div>
+                    </div>
+                </div>
+            );
 
             const App = ({ user, data, onLogout }) => {
                 const [view, setView] = useState('dashboard');
@@ -441,13 +467,21 @@
                 const [toast, setToast] = useState('');
                 const [timeFilter, setTimeFilter] = useState('all'); 
                 const [showSubModal, setShowSubModal] = useState(false);
-                
                 const [currentMonth, setCurrentMonth] = useState(() => {
                     const now = new Date();
                     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}`;
                 });
 
-                // --- HELPER FUNCTIONS ---
+                // --- Form States for Transactions ---
+                const [desc, setDesc] = useState('');
+                const [amount, setAmount] = useState('');
+                const [type, setType] = useState('expense');
+                const [cat, setCat] = useState('Casa');
+
+                useEffect(() => { if (data) setLocalData(data); }, [data]);
+
+                if (!localData || !localData.transactions) return <div className="h-screen flex items-center justify-center text-slate-500">Carregando dados...</div>;
+
                 const saveToCloud = async (newData) => {
                     try {
                         const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'finance');
@@ -456,17 +490,13 @@
                     } catch (e) { alert("Erro ao salvar."); }
                 };
 
-                const filterByMonth = (items) => {
-                    if (!items) return [];
-                    return items.filter(item => item.date.startsWith(currentMonth));
-                };
-
-                const getDueDebts = () => {
-                    const today = new Date().getDate();
-                    return (localData.debts || []).filter(d => {
-                        const paidInMonth = d.lastPaidMonth === currentMonth;
-                        return !paidInMonth && d.installmentsPaid < d.installmentsTotal;
-                    });
+                const filterByMonth = (items) => (items || []).filter(item => item.date.startsWith(currentMonth));
+                const getDueDebts = () => (localData.debts || []).filter(d => d.lastPaidMonth !== currentMonth && d.installmentsPaid < d.installmentsTotal);
+                const getUserLevel = () => {
+                    const xp = (localData.transactions || []).length * 10;
+                    if(xp > 1000) return { title: 'Mestre', color: 'text-purple-600', icon: <Icons.Trophy /> };
+                    if(xp > 500) return { title: 'Investidor', color: 'text-yellow-600', icon: <Icons.Star /> };
+                    return { title: 'Iniciante', color: 'text-blue-600', icon: <Icons.User /> };
                 };
 
                 const handleAIAddTransaction = (newTx) => {
@@ -487,23 +517,8 @@
                     { id: 'profile', label: 'Perfil', icon: <Icons.Profile /> },
                     { id: 'ai', label: 'IA', icon: <Icons.AI /> },
                 ];
-                
-                // --- Form States for Transactions ---
-                const [desc, setDesc] = useState('');
-                const [amount, setAmount] = useState('');
-                const [type, setType] = useState('expense');
-                const [cat, setCat] = useState('Casa');
 
-                useEffect(() => { if (data) setLocalData(data); }, [data]);
-
-                if (!localData || !localData.transactions) return <div className="h-screen flex items-center justify-center text-slate-500">Carregando dados...</div>;
-
-                const getFilteredTransactions = () => {
-                    if (timeFilter === 'all') return localData.transactions;
-                    return filterByMonth(localData.transactions);
-                };
-
-                const filteredTransactions = getFilteredTransactions();
+                const filteredTransactions = timeFilter === 'all' ? localData.transactions : filterByMonth(localData.transactions);
                 const totalInc = filteredTransactions.filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0);
                 const totalExp = filteredTransactions.filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
                 const balance = totalInc - totalExp;
@@ -518,22 +533,20 @@
                     return Object.values(m).sort((a,b)=>0).slice(-7);
                 })();
 
-                // RENDER FUNCTIONS (Defined inside App to access state)
+                const pieData = localData.customCategories.map(cat => ({
+                    name: cat, value: filteredTransactions.filter(t => t.type === 'expense' && t.category === cat).reduce((a, b) => a + b.amount, 0)
+                })).filter(i => i.value > 0);
+                const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
+
+                // --- TELAS ---
                 const renderDebts = () => (
                     <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in space-y-4">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-slate-800">Dívidas & Contas</h3>
                             <button onClick={()=>{
-                                const n=prompt('Nome da Dívida');
-                                const v=prompt('Valor Total');
-                                const i=prompt('Qtde Parcelas');
-                                const d=prompt('Dia Vencimento (1-31)');
+                                const n=prompt('Nome da Dívida'); const v=prompt('Valor Total'); const i=prompt('Qtde Parcelas'); const d=prompt('Dia Vencimento (1-31)');
                                 if(n && v && i && d) {
-                                    const newDebt = {
-                                        id: Date.now(), name: n, totalValue: parseFloat(v), 
-                                        installmentsTotal: parseInt(i), installmentsPaid: 0,
-                                        dueDay: parseInt(d), lastPaidMonth: ''
-                                    };
+                                    const newDebt = { id: Date.now(), name: n, totalValue: parseFloat(v), installmentsTotal: parseInt(i), installmentsPaid: 0, dueDay: parseInt(d), lastPaidMonth: '' };
                                     saveToCloud({...localData, debts: [...(localData.debts||[]), newDebt]});
                                 }
                             }} className="text-xs bg-brand-100 text-brand-600 px-3 py-1.5 rounded-lg font-bold">+ Nova Dívida</button>
@@ -573,123 +586,47 @@
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-xl font-bold text-slate-800">Visão Geral</h2>
-                                <select value={timeFilter} onChange={e=>setTimeFilter(e.target.value)} className="bg-white border rounded p-1 text-sm">
-                                    <option value="all">Tudo</option>
-                                    <option value="month">Este Mês</option>
-                                </select>
+                                <select value={timeFilter} onChange={e=>setTimeFilter(e.target.value)} className="bg-white border rounded p-1 text-sm"><option value="all">Tudo</option><option value="month">Este Mês</option></select>
                             </div>
                             {dueDebts.length > 0 && (
-                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r shadow-sm">
-                                    <div className="flex gap-2">
-                                        <Icons.Alert />
-                                        <div>
-                                            <p className="font-bold text-yellow-700 text-sm">Contas a pagar:</p>
-                                            <ul className="list-disc pl-5 mt-1 text-xs text-yellow-800">
-                                                {dueDebts.map(d=><li key={d.id}>{d.name} - Dia {d.dueDay} (R$ {(d.totalValue/d.installmentsTotal).toFixed(2)})</li>)}
-                                            </ul>
-                                        </div>
-                                    </div>
+                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r shadow-sm flex gap-2">
+                                    <Icons.Alert /><div><p className="font-bold text-yellow-700 text-sm">Contas a Pagar:</p><ul className="list-disc pl-5 mt-1 text-xs text-yellow-800">{dueDebts.map(d=><li key={d.id}>{d.name} - Dia {d.dueDay} (R$ {(d.totalValue/d.installmentsTotal).toFixed(2)})</li>)}</ul></div>
                                 </div>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="bg-white p-5 rounded-xl border shadow-sm">
-                                    <p className="text-xs text-slate-500 font-bold uppercase">Entradas</p>
-                                    <p className="text-2xl font-bold text-green-600">R$ {totalInc.toFixed(2)}</p>
-                                </div>
-                                <div className="bg-white p-5 rounded-xl border shadow-sm">
-                                    <p className="text-xs text-slate-500 font-bold uppercase">Saídas</p>
-                                    <p className="text-2xl font-bold text-red-600">R$ {totalExp.toFixed(2)}</p>
-                                </div>
-                                <div className="bg-white p-5 rounded-xl border shadow-sm">
-                                    <p className="text-xs text-slate-500 font-bold uppercase">Saldo</p>
-                                    <p className={`text-2xl font-bold ${balance>=0?'text-brand-600':'text-red-600'}`}>R$ {balance.toFixed(2)}</p>
-                                </div>
+                                <div className="bg-white p-5 rounded-xl border shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Entradas</p><p className="text-2xl font-bold text-green-600">R$ {totalInc.toFixed(2)}</p></div>
+                                <div className="bg-white p-5 rounded-xl border shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Saídas</p><p className="text-2xl font-bold text-red-600">R$ {totalExp.toFixed(2)}</p></div>
+                                <div className="bg-white p-5 rounded-xl border shadow-sm"><p className="text-xs font-bold text-slate-500 uppercase">Saldo</p><p className={`text-2xl font-bold ${balance>=0?'text-brand-600':'text-red-600'}`}>R$ {balance.toFixed(2)}</p></div>
                             </div>
                             <div className="bg-white p-5 rounded-xl border shadow-sm">
-                                <div className="flex justify-between mb-4">
-                                    <h3 className="font-bold text-slate-800">Assinaturas / Streaming</h3>
-                                    <button onClick={()=>setShowSubModal(true)} className="text-xs text-brand-600 font-bold">+ Adicionar</button>
-                                </div>
+                                <div className="flex justify-between mb-4"><h3 className="font-bold text-slate-800">Assinaturas</h3><button onClick={()=>setShowSubModal(true)} className="text-xs text-brand-600 font-bold">+ Adicionar</button></div>
                                 {showSubModal && (
                                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                                         <div className="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl">
-                                            <h3 className="font-bold text-lg mb-4">Adicionar Assinatura</h3>
-                                            <div className="grid grid-cols-3 gap-3 mb-4">
-                                                {['Netflix','YouTube','Spotify','Amazon','Disney','Apple'].map(s => (
-                                                    <button key={s} onClick={()=>{
-                                                        const p = prompt(`Valor mensal do ${s}:`);
-                                                        if(p) {
-                                                            saveToCloud({...localData, subscriptions: [...(localData.subscriptions||[]), {id:Date.now(), name:s, price:parseFloat(p)}]});
-                                                            setShowSubModal(false);
-                                                        }
-                                                    }} className="flex flex-col items-center justify-center p-2 border rounded hover:bg-slate-50">
-                                                        {React.createElement(BrandLogos[s] || BrandLogos.Default)}
-                                                        <span className="text-[10px] mt-1 font-medium">{s}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <button onClick={()=>{
-                                                const n=prompt('Nome'); const p=prompt('Valor');
-                                                if(n&&p) {
-                                                    saveToCloud({...localData, subscriptions: [...(localData.subscriptions||[]), {id:Date.now(), name:n, price:parseFloat(p)}]});
-                                                    setShowSubModal(false);
-                                                }
-                                            }} className="w-full bg-slate-100 text-slate-700 py-2 rounded text-sm font-bold hover:bg-slate-200">Outro Personalizado</button>
-                                            <button onClick={()=>setShowSubModal(false)} className="w-full mt-2 text-red-500 text-xs hover:underline">Cancelar</button>
+                                            <h3 className="font-bold text-lg mb-4">Adicionar</h3>
+                                            <div className="grid grid-cols-3 gap-3 mb-4">{['Netflix','YouTube','Spotify','Amazon','Disney','Apple'].map(s=>(<button key={s} onClick={()=>{const p=prompt(`Valor ${s}:`); if(p){saveToCloud({...localData, subscriptions:[...(localData.subscriptions||[]),{id:Date.now(), name:s, price:parseFloat(p)}]}); setShowSubModal(false);}}} className="flex flex-col items-center justify-center p-2 border rounded hover:bg-slate-50">{React.createElement(BrandLogos[s]||BrandLogos.Default)}<span className="text-[10px] mt-1">{s}</span></button>))}</div>
+                                            <button onClick={()=>setShowSubModal(false)} className="w-full text-red-500 text-xs hover:underline">Fechar</button>
                                         </div>
                                     </div>
                                 )}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    {(localData.subscriptions||[]).map(s=>{
-                                        let Logo = BrandLogos.Default;
-                                        Object.keys(BrandLogos).forEach(key => {
-                                            if(s.name.toLowerCase().includes(key.toLowerCase())) Logo = BrandLogos[key];
-                                        });
-                                        return (
-                                            <div key={s.id} className="flex justify-between items-center p-3 bg-slate-50 rounded border">
-                                                <div className="flex items-center gap-3"><Logo /><span className="font-medium text-sm">{s.name}</span></div>
-                                                <div className="flex gap-3 items-center"><span className="text-sm font-bold text-slate-600">R$ {s.price.toFixed(2)}</span><button onClick={()=>saveToCloud({...localData, subscriptions: localData.subscriptions.filter(x=>x.id!==s.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button></div>
-                                            </div>
-                                        );
-                                    })}
-                                    {(!localData.subscriptions || localData.subscriptions.length===0) && <span className="text-xs text-slate-400">Sem assinaturas.</span>}
-                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{(localData.subscriptions||[]).map(s=>{let Logo=BrandLogos.Default; Object.keys(BrandLogos).forEach(key=>{if(s.name.toLowerCase().includes(key.toLowerCase())) Logo=BrandLogos[key];}); return (<div key={s.id} className="flex justify-between items-center p-3 bg-slate-50 rounded border"><div className="flex items-center gap-3"><Logo/><span className="font-medium text-sm">{s.name}</span></div><div className="flex gap-3 items-center"><span className="text-sm font-bold text-slate-600">R$ {s.price.toFixed(2)}</span><button onClick={()=>saveToCloud({...localData, subscriptions:localData.subscriptions.filter(x=>x.id!==s.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button></div></div>);})}</div>
                             </div>
-                            <div className="bg-white p-5 rounded-xl border shadow-sm h-64">
-                                <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><XAxis dataKey="name"/><Tooltip/><Bar dataKey="receita" fill="#22c55e" name="Receita"/><Bar dataKey="despesa" fill="#ef4444" name="Despesa"/></BarChart></ResponsiveContainer>
-                            </div>
+                            <div className="bg-white p-5 rounded-xl border shadow-sm h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><XAxis dataKey="name"/><Tooltip/><Bar dataKey="receita" fill="#22c55e"/><Bar dataKey="despesa" fill="#ef4444"/></BarChart></ResponsiveContainer></div>
                         </div>
                     );
                 };
 
                 const renderTransactions = () => (
                     <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
-                        <h3 className="font-bold mb-4 text-slate-800">Nova Transação</h3>
+                        <h3 className="font-bold mb-4">Nova Transação</h3>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
                             <input className="border p-2 rounded text-sm" placeholder="Descrição" value={desc} onChange={e=>setDesc(e.target.value)} />
                             <input type="number" className="border p-2 rounded text-sm" placeholder="Valor" value={amount} onChange={e=>setAmount(e.target.value)} />
                             <select className="border p-2 rounded text-sm" value={type} onChange={e=>setType(e.target.value)}><option value="expense">Despesa</option><option value="income">Receita</option></select>
-                            <select className="border p-2 rounded text-sm" value={cat} onChange={e=>setCat(e.target.value)}>
-                                {(localData.customCategories||['Geral']).map(c=><option key={c} value={c}>{c}</option>)}
-                            </select>
-                            <button onClick={()=>{
-                                if(!desc || !amount) return;
-                                const newT = { id:Date.now(), desc, amount:parseFloat(amount), type, category:cat, date:new Date().toISOString() };
-                                saveToCloud({...localData, transactions: [...localData.transactions, newT]});
-                                setDesc(''); setAmount('');
-                            }} className="bg-brand-600 text-white rounded font-bold text-sm col-span-2 md:col-span-1">Salvar</button>
+                            <select className="border p-2 rounded text-sm" value={cat} onChange={e=>setCat(e.target.value)}>{localData.customCategories.map(c=><option key={c} value={c}>{c}</option>)}</select>
+                            <button onClick={()=>{if(!desc||!amount)return; const newT={id:Date.now(), desc, amount:parseFloat(amount), type, category:cat, date:new Date().toISOString()}; saveToCloud({...localData, transactions:[...localData.transactions, newT]}); setDesc(''); setAmount('');}} className="bg-brand-600 text-white rounded font-bold text-sm">Salvar</button>
                         </div>
-                        <div className="divide-y">
-                            {localData.transactions.slice().reverse().map(t=>(
-                                <div key={t.id} className="py-3 flex justify-between items-center text-sm">
-                                    <div><p className="font-medium">{t.desc}</p><p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString()} • {t.category}</p></div>
-                                    <div className="flex items-center gap-3">
-                                        <span className={`font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>R$ {t.amount.toFixed(2)}</span>
-                                        <button onClick={()=>saveToCloud({...localData, transactions: localData.transactions.filter(x=>x.id!==t.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash /></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <div className="divide-y">{localData.transactions.slice().reverse().map(t=>(<div key={t.id} className="py-3 flex justify-between text-sm"><div><p className="font-medium">{t.desc}</p><p className="text-xs text-slate-400">{t.category}</p></div><span className={`font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>R$ {t.amount.toFixed(2)}</span></div>))}</div>
                     </div>
                 );
 
@@ -698,15 +635,84 @@
                     return (
                         <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
                             <h3 className="font-bold mb-4 capitalize">{viewType === 'income' ? 'Receitas' : 'Despesas'}</h3>
-                            {list.length===0 ? <p className="text-slate-400">Vazio.</p> : list.map(t=>(
-                                <div key={t.id} className="py-3 border-b flex justify-between">
-                                    <span>{t.desc}</span>
-                                    <span className="font-bold">R$ {t.amount.toFixed(2)}</span>
-                                </div>
-                            ))}
+                            {list.length===0 ? <p className="text-slate-400">Vazio.</p> : list.map(t=>(<div key={t.id} className="py-3 border-b flex justify-between"><span>{t.desc}</span><span className="font-bold">R$ {t.amount.toFixed(2)}</span></div>))}
                         </div>
                     );
                 };
+
+                const renderMarket = () => {
+                    const totalMarket = (localData.marketList||[]).filter(i=>i.check).reduce((a,b)=>a+b.price,0);
+                    return (
+                        <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                            <h3 className="font-bold mb-4">Mercado</h3>
+                            <div className="flex gap-2 mb-4">
+                                <input id="mItem" className="border rounded p-2 flex-1 text-sm" placeholder="Item" />
+                                <input id="mPrice" type="number" className="border rounded p-2 w-20 text-sm" placeholder="R$" />
+                                <button onClick={()=>{const i=document.getElementById('mItem').value; const p=document.getElementById('mPrice').value; if(i) { saveToCloud({...localData, marketList: [...(localData.marketList||[]), {id:Date.now(), item:i, price:parseFloat(p)||0, check:false}]}); document.getElementById('mItem').value=''; }}} className="bg-brand-600 text-white px-3 rounded font-bold">+</button>
+                            </div>
+                            <div className="space-y-2">{(localData.marketList||[]).map(m=>(<div key={m.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded border"><div className="flex items-center gap-2"><input type="checkbox" checked={m.check} onChange={()=>{const l=localData.marketList.map(x=>x.id===m.id?{...x, check:!x.check}:x); saveToCloud({...localData, marketList:l});}} /><span className={m.check?'line-through text-slate-400':''}>{m.item}</span></div><div className="flex gap-3"><span className="text-sm font-bold text-slate-600">R$ {m.price.toFixed(2)}</span><button onClick={()=>saveToCloud({...localData, marketList:localData.marketList.filter(x=>x.id!==m.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button></div></div>))}</div>
+                            <div className="mt-4 pt-4 border-t flex justify-between items-center"><span className="font-bold text-brand-700">Total Marcado: R$ {totalMarket.toFixed(2)}</span><button onClick={()=>{if(totalMarket > 0 && confirm('Lançar esse total como despesa e limpar marcados?')) {const newT={id:Date.now(), desc:'Compra Mercado', amount:totalMarket, type:'expense', category:'Mercado', date:new Date().toISOString()}; const remainingList=localData.marketList.filter(i=>!i.check); saveToCloud({...localData, transactions: [...localData.transactions, newT], marketList: remainingList});}}} className="text-xs bg-slate-800 text-white px-3 py-2 rounded font-bold">Finalizar Compra</button></div>
+                        </div>
+                    );
+                };
+
+                const renderVehicles = () => (
+                    <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                        <div className="flex justify-between mb-4"><h3 className="font-bold">Veículos</h3><button onClick={()=>{const n=prompt('Veículo'); if(n) saveToCloud({...localData, vehicles: [...(localData.vehicles||[]), {id:Date.now(), name:n, expenses:0}]});}} className="text-xs text-brand-600 font-bold">+ Novo</button></div>
+                        {(localData.vehicles||[]).map(v=>(<div key={v.id} className="p-4 border rounded-lg mb-2 flex justify-between items-center"><div><p className="font-bold">{v.name}</p><p className="text-xs text-slate-500">Gastos: R$ {v.expenses.toFixed(2)}</p></div><button onClick={()=>{const val=parseFloat(prompt('Valor do gasto')); if(!isNaN(val)) {const updated=localData.vehicles.map(x=>x.id===v.id?{...x, expenses:x.expenses+val}:x); const addTx=confirm('Adicionar também ao extrato principal?'); let newData={...localData, vehicles:updated}; if(addTx) newData.transactions=[...localData.transactions, {id:Date.now(), desc:`Gasto ${v.name}`, amount:val, type:'expense', category:'Transporte', date:new Date().toISOString()}]; saveToCloud(newData);}}} className="bg-slate-100 text-xs font-bold px-3 py-1 rounded">Lançar Gasto</button></div>))}
+                    </div>
+                );
+
+                const renderCategories = () => (
+                    <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                        <h3 className="font-bold mb-4">Categorias</h3>
+                        <div className="flex flex-wrap gap-2 mb-4">{(localData.customCategories||[]).map(c=><span key={c} className="bg-slate-100 px-3 py-1 rounded-full text-sm">{c}</span>)}</div>
+                        <button onClick={()=>{const c=prompt('Nova Categoria'); if(c) saveToCloud({...localData, customCategories:[...(localData.customCategories||[]), c]})}} className="bg-brand-600 text-white px-4 py-2 rounded text-sm font-bold">Adicionar Categoria</button>
+                    </div>
+                );
+
+                const renderGoals = () => (
+                    <div className="space-y-4 animate-fade-in">
+                        <div className="bg-white p-6 rounded-xl border shadow-sm"><h3 className="font-bold mb-4">Metas</h3><button onClick={()=>{const t=prompt('Título'); const v=prompt('Meta (R$)'); if(t&&v) saveToCloud({...localData, goals:[...(localData.goals||[]), {id:Date.now(), title:t, target:parseFloat(v), saved:0}]})}} className="bg-brand-600 text-white px-3 py-1 rounded text-sm mb-4">+ Nova Meta</button><div className="grid md:grid-cols-2 gap-4">{(localData.goals||[]).map(g=>(<div key={g.id} className="border p-4 rounded-xl"><div className="flex justify-between mb-2"><span className="font-bold">{g.title}</span><span className="text-xs">R$ {g.saved} / {g.target}</span></div><div className="h-2 bg-slate-100 rounded-full mb-2"><div style={{width: Math.min((g.saved/g.target)*100, 100)+'%'}} className="h-full bg-brand-500 rounded-full"></div></div><button onClick={()=>{const val=prompt('Valor a guardar'); if(val) saveToCloud({...localData, goals: localData.goals.map(x=>x.id===g.id?{...x, saved:x.saved+parseFloat(val)}:x)})}} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded font-bold">Depositar</button></div>))}</div></div>
+                    </div>
+                );
+
+                const renderReports = () => (
+                    <div className="space-y-6 animate-fade-in">
+                        <h1 className="text-2xl font-bold text-slate-800">Relatórios Detalhados</h1>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow h-80">
+                                <h3 className="font-bold text-slate-800 mb-4">Gastos por Categoria</h3>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                            {pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                        </Pie>
+                                        <Tooltip />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow h-80">
+                                <h3 className="font-bold text-slate-800 mb-4">Evolução Diária</h3>
+                                <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="despesa" fill="#ef4444" radius={[4, 4, 0, 0]} name="Gasto Diário" /></BarChart></ResponsiveContainer>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+                const renderProfile = () => (
+                    <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
+                        <h3 className="font-bold mb-4 text-slate-800 flex justify-between">Perfil 
+                            <a href="https://wa.me/5587985560265?text=Olá, preciso de ajuda com o FluxBlue." target="_blank" className="flex items-center gap-1 text-whatsapp-600 text-xs hover:underline"><Icons.Whatsapp /> Suporte</a>
+                        </h3>
+                        <div className="mb-6">
+                            <label className="block text-xs font-bold text-slate-500 mb-1">Nome de Exibição</label>
+                            <input className="w-full border rounded p-2 text-sm mb-4" value={localData.settings.userName} onChange={e=>saveToCloud({...localData, settings: {...localData.settings, userName: e.target.value}})} />
+                        </div>
+                        <p className="text-xs text-slate-400 mb-6">ID: {user.uid}</p>
+                        <button onClick={onLogout} className="text-red-500 border border-red-200 px-4 py-2 rounded hover:bg-red-50 w-full text-sm font-bold">Sair da Conta</button>
+                    </div>
+                );
 
                 const renderContent = () => {
                     switch(view) {
@@ -715,124 +721,28 @@
                         case 'income': return renderIncomeExpense('income');
                         case 'expense': return renderIncomeExpense('expense');
                         case 'debts': return renderDebts();
-                        case 'market':
-                            const totalMarket = (localData.marketList||[]).filter(i=>i.check).reduce((a,b)=>a+b.price,0);
-                            return (
-                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
-                                    <h3 className="font-bold mb-4">Mercado</h3>
-                                    <div className="flex gap-2 mb-4">
-                                        <input id="mItem" className="border rounded p-2 flex-1 text-sm" placeholder="Item" />
-                                        <input id="mPrice" type="number" className="border rounded p-2 w-20 text-sm" placeholder="R$" />
-                                        <button onClick={()=>{
-                                            const i=document.getElementById('mItem').value; const p=document.getElementById('mPrice').value;
-                                            if(i) { saveToCloud({...localData, marketList: [...(localData.marketList||[]), {id:Date.now(), item:i, price:parseFloat(p)||0, check:false}]}); document.getElementById('mItem').value=''; }
-                                        }} className="bg-brand-600 text-white px-3 rounded font-bold">+</button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {(localData.marketList||[]).map(m=>(
-                                            <div key={m.id} className="flex justify-between items-center p-2 hover:bg-slate-50 rounded border">
-                                                <div className="flex items-center gap-2">
-                                                    <input type="checkbox" checked={m.check} onChange={()=>{
-                                                        const l = localData.marketList.map(x=>x.id===m.id?{...x, check:!x.check}:x);
-                                                        saveToCloud({...localData, marketList:l});
-                                                    }} />
-                                                    <span className={m.check?'line-through text-slate-400':''}>{m.item}</span>
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <span className="text-sm font-bold text-slate-600">R$ {m.price.toFixed(2)}</span>
-                                                    <button onClick={()=>saveToCloud({...localData, marketList:localData.marketList.filter(x=>x.id!==m.id)})} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-4 pt-4 border-t flex justify-between items-center">
-                                        <span className="font-bold text-brand-700">Total Marcado: R$ {totalMarket.toFixed(2)}</span>
-                                        <button onClick={()=>{
-                                            if(totalMarket > 0 && confirm('Lançar esse total como despesa e limpar marcados?')) {
-                                                const newT = { id:Date.now(), desc:'Compra Mercado', amount:totalMarket, type:'expense', category:'Mercado', date:new Date().toISOString() };
-                                                const remainingList = localData.marketList.filter(i=>!i.check);
-                                                saveToCloud({...localData, transactions: [...localData.transactions, newT], marketList: remainingList});
-                                            }
-                                        }} className="text-xs bg-slate-800 text-white px-3 py-2 rounded font-bold">Finalizar Compra</button>
-                                    </div>
-                                </div>
-                            );
-                        case 'vehicles':
-                            return (
-                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
-                                    <div className="flex justify-between mb-4"><h3 className="font-bold">Veículos</h3><button onClick={()=>{
-                                        const n=prompt('Veículo'); if(n) saveToCloud({...localData, vehicles: [...(localData.vehicles||[]), {id:Date.now(), name:n, expenses:0}]});
-                                    }} className="text-xs text-brand-600 font-bold">+ Novo</button></div>
-                                    {(localData.vehicles||[]).map(v=>(
-                                        <div key={v.id} className="p-4 border rounded-lg mb-2 flex justify-between items-center">
-                                            <div><p className="font-bold">{v.name}</p><p className="text-xs text-slate-500">Gastos: R$ {v.expenses.toFixed(2)}</p></div>
-                                            <button onClick={()=>{
-                                                const val=parseFloat(prompt('Valor do gasto'));
-                                                if(!isNaN(val)) {
-                                                    const updated = localData.vehicles.map(x=>x.id===v.id?{...x, expenses:x.expenses+val}:x);
-                                                    const addTx = confirm('Adicionar também ao extrato principal?');
-                                                    let newData = {...localData, vehicles:updated};
-                                                    if(addTx) newData.transactions = [...localData.transactions, {id:Date.now(), desc:`Gasto ${v.name}`, amount:val, type:'expense', category:'Transporte', date:new Date().toISOString()}];
-                                                    saveToCloud(newData);
-                                                }
-                                            }} className="bg-slate-100 text-xs font-bold px-3 py-1 rounded">Lançar Gasto</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            );
-                        case 'categories':
-                            return (
-                                <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
-                                    <h3 className="font-bold mb-4">Categorias</h3>
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {(localData.customCategories||[]).map(c=><span key={c} className="bg-slate-100 px-3 py-1 rounded-full text-sm">{c}</span>)}
-                                    </div>
-                                    <button onClick={()=>{const c=prompt('Nova Categoria'); if(c) saveToCloud({...localData, customCategories:[...(localData.customCategories||[]), c]})}} className="bg-brand-600 text-white px-4 py-2 rounded text-sm font-bold">Adicionar Categoria</button>
-                                </div>
-                            );
+                        case 'market': return renderMarket();
+                        case 'vehicles': return renderVehicles();
+                        case 'categories': return renderCategories();
                         case 'ai': return <AIChat data={localData} onAddTransaction={handleAIAddTransaction} />;
-                        case 'goals': return (
-                            <div className="space-y-4 animate-fade-in">
-                                <div className="bg-white p-6 rounded-xl border shadow-sm"><h3 className="font-bold mb-4">Metas</h3>
-                                <button onClick={()=>{const t=prompt('Título'); const v=prompt('Meta (R$)'); if(t&&v) saveToCloud({...localData, goals:[...(localData.goals||[]), {id:Date.now(), title:t, target:parseFloat(v), saved:0}]})}} className="bg-brand-600 text-white px-3 py-1 rounded text-sm mb-4">+ Nova Meta</button>
-                                <div className="grid md:grid-cols-2 gap-4">{(localData.goals||[]).map(g=>(
-                                    <div key={g.id} className="border p-4 rounded-xl">
-                                        <div className="flex justify-between mb-2"><span className="font-bold">{g.title}</span><span className="text-xs">R$ {g.saved} / {g.target}</span></div>
-                                        <div className="h-2 bg-slate-100 rounded-full mb-2"><div style={{width: Math.min((g.saved/g.target)*100, 100)+'%'}} className="h-full bg-brand-500 rounded-full"></div></div>
-                                        <button onClick={()=>{const val=prompt('Valor a guardar'); if(val) saveToCloud({...localData, goals: localData.goals.map(x=>x.id===g.id?{...x, saved:x.saved+parseFloat(val)}:x)})}} className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded font-bold">Depositar</button>
-                                    </div>
-                                ))}</div></div>
-                            </div>
-                        );
-                        case 'reports': return (
-                            <div className="space-y-6 animate-fade-in">
-                                <h1 className="text-2xl font-bold text-slate-800">Relatórios Detalhados</h1>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white p-6 rounded-xl border border-slate-200 card-shadow h-80">
-                                        <h3 className="font-bold text-slate-800 mb-4">Gastos por Dia</h3>
-                                        <ResponsiveContainer width="100%" height="100%"><BarChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="despesa" fill="#ef4444" radius={[4, 4, 0, 0]} name="Gasto Diário" /></BarChart></ResponsiveContainer>
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                        case 'profile': return (
-                            <div className="bg-white p-6 rounded-xl border shadow-sm animate-fade-in">
-                                <h3 className="font-bold mb-4 text-slate-800">Perfil & Configurações</h3>
-                                <div className="mb-6">
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Nome de Exibição</label>
-                                    <input className="w-full border rounded p-2 text-sm mb-4" value={localData.settings.userName} onChange={e=>saveToCloud({...localData, settings: {...localData.settings, userName: e.target.value}})} />
-                                </div>
-                                <p className="text-xs text-slate-400 mb-6">ID: {user.uid}</p>
-                                <button onClick={onLogout} className="text-red-500 border border-red-200 px-4 py-2 rounded hover:bg-red-50 w-full text-sm font-bold">Sair da Conta</button>
-                            </div>
-                        );
+                        case 'goals': return renderGoals();
+                        case 'reports': return renderReports();
+                        case 'profile': return renderProfile();
                         default: return renderDashboard();
                     }
                 };
 
+                const userLevel = getUserLevel();
+
                 return (
                     <div className="flex h-screen bg-slate-50 font-sans">
                         {toast && <Toast msg={toast} />}
+                        
+                        {/* BOTÃO FLUTUANTE DO WHATSAPP (FIXO) */}
+                        <a href="https://wa.me/5587985560265?text=Olá, preciso de ajuda com o FluxBlue." target="_blank" className="fixed bottom-24 right-4 md:bottom-8 md:right-8 bg-whatsapp-500 hover:bg-whatsapp-600 text-white p-3 rounded-full shadow-lg z-50 whatsapp-float transition-transform hover:scale-110 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                        </a>
+
                         <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex overflow-y-auto">
                             <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2 shrink-0 sticky top-0 z-10"><span className="text-white font-bold text-lg">FluxBlue</span></div>
                             <nav className="flex-1 py-4 px-3 space-y-1">
@@ -852,7 +762,7 @@
                                 <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2"><span className="md:hidden text-brand-600">{menuItems.find(i=>i.id===view)?.icon}</span>{menuItems.find(i=>i.id===view)?.label}</h2>
                                 <div className="flex items-center gap-3">
                                     <input type="month" value={currentMonth} onChange={e=>setCurrentMonth(e.target.value)} className="bg-slate-100 border-none text-xs rounded p-1 text-slate-600 font-bold" />
-                                    <span className="text-xs bg-brand-50 text-brand-700 px-3 py-1 rounded-full font-bold border border-brand-100 hidden md:block">{localData.settings.userName}</span>
+                                    <div className={`hidden md:flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-slate-100 ${userLevel.color}`}>{userLevel.icon} {userLevel.title}</div>
                                 </div>
                             </header>
                             <div className="p-4 md:p-8 max-w-7xl mx-auto">
@@ -874,7 +784,6 @@
                 const [user, setUser] = useState(null);
                 const [userData, setUserData] = useState(null);
                 const [loading, setLoading] = useState(true);
-                
                 useEffect(() => {
                     const unsub = onAuthStateChanged(auth, async (u) => {
                         if (u) {
@@ -893,6 +802,10 @@
                 
                 if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><div className="loader"></div></div>;
                 if (!user) return <AuthScreen />;
+                // Para ativar o bloqueio, descomente as linhas abaixo
+                const isExpired = userData?.subscription?.active === false && userData?.subscription?.expiresAt && new Date() > new Date(userData.subscription.expiresAt);
+                if (isExpired) return <Paywall user={user} />;
+                
                 return <App user={user} data={userData} onLogout={()=>auth.signOut()} />;
             };
 
