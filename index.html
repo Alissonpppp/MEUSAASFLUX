@@ -71,10 +71,6 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .mobile-nav-shadow { box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05); }
         canvas { touch-action: none; }
-        
-        /* Floating Whatsapp Button Animation */
-        .whatsapp-float { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-5px); } 100% { transform: translateY(0px); } }
     </style>
 </head>
 <body class="antialiased">
@@ -177,6 +173,7 @@
 
             // --- PAINEL ADMIN ---
             const AdminPanel = ({ onClose }) => {
+                const [viewMode, setViewMode] = React.useState('active'); // 'active' or 'archived'
                 const [users, setUsers] = React.useState([]);
                 const [loading, setLoading] = React.useState(true);
 
@@ -210,6 +207,23 @@
                     } catch (e) { alert("Erro: " + e.message); }
                 };
 
+                const toggleArchive = async (uid, isArchived) => {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public_users', uid), { archived: !isArchived });
+                        setUsers(users.map(u => u.id === uid ? { ...u, archived: !isArchived } : u));
+                    } catch (e) { alert("Erro: " + e.message); }
+                };
+
+                const getDaysRemaining = (user) => {
+                    // This data needs to be fetched from the user's finance doc to be accurate,
+                    // but for the list view, we might need to store expiresAt on public_users too.
+                    // For now, let's assume we read it if we had it, or just show status.
+                    // To do it right, we'd update public_users with expiration date on approval.
+                    return "N/A"; 
+                };
+
+                const filteredUsers = users.filter(u => viewMode === 'archived' ? u.archived : !u.archived);
+
                 return (
                     <div className="fixed inset-0 bg-slate-900 z-[100] p-8 overflow-y-auto">
                         <div className="max-w-4xl mx-auto">
@@ -217,19 +231,40 @@
                                 <h1 className="text-3xl font-bold text-white flex items-center gap-2"><Icons.Admin /> Painel Admin</h1>
                                 <button onClick={onClose} className="text-slate-400 hover:text-white"><Icons.Close /></button>
                             </div>
+
+                            <div className="flex gap-4 mb-6">
+                                <button onClick={() => setViewMode('active')} className={`px-4 py-2 rounded font-bold ${viewMode === 'active' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>Ativos/Pendentes</button>
+                                <button onClick={() => setViewMode('archived')} className={`px-4 py-2 rounded font-bold ${viewMode === 'archived' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300'}`}>Arquivados</button>
+                            </div>
+                            
                             <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                                <h2 className="text-xl font-bold text-white mb-4">Clientes Cadastrados</h2>
+                                <h2 className="text-xl font-bold text-white mb-4">Gerenciar Clientes ({filteredUsers.length})</h2>
                                 {loading ? <p className="text-slate-400">Carregando...</p> : (
                                     <div className="space-y-2">
-                                        {users.map(u => (
-                                            <div key={u.id} className="flex justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600">
-                                                <div><p className="font-bold text-white">{u.email}</p><p className="text-xs text-slate-400">{u.id}</p></div>
-                                                <button onClick={() => toggleStatus(u.id, u.active)} className={`px-4 py-2 rounded text-xs font-bold ${u.active ? 'bg-red-600' : 'bg-green-600'} text-white`}>
-                                                    {u.active ? 'Bloquear' : 'Aprovar'}
-                                                </button>
+                                        {filteredUsers.length === 0 && <p className="text-slate-500">Nenhum usuário nesta lista.</p>}
+                                        {filteredUsers.map(u => (
+                                            <div key={u.id} className="flex flex-col md:flex-row justify-between items-center p-4 bg-slate-700/50 rounded-lg border border-slate-600 gap-4">
+                                                <div>
+                                                    <p className="font-bold text-white">{u.email}</p>
+                                                    <p className="text-xs text-slate-400">UID: {u.id}</p>
+                                                    <p className="text-xs text-slate-500">Status: {u.active ? 'Ativo' : 'Bloqueado'}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button 
+                                                        onClick={() => toggleStatus(u.id, u.active)}
+                                                        className={`px-4 py-2 rounded text-xs font-bold transition ${u.active ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}`}
+                                                    >
+                                                        {u.active ? 'Bloquear/Reprovar' : 'Aprovar (30 dias)'}
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => toggleArchive(u.id, u.archived)}
+                                                        className="px-4 py-2 rounded text-xs font-bold bg-slate-600 hover:bg-slate-500 text-white"
+                                                    >
+                                                        {u.archived ? 'Desarquivar' : 'Arquivar'}
+                                                    </button>
+                                                </div>
                                             </div>
                                         ))}
-                                        {users.length === 0 && <p className="text-slate-500">Nenhum usuário.</p>}
                                     </div>
                                 )}
                             </div>
@@ -421,7 +456,7 @@
                         catch (e) { 
                              if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
                                  const uc=await createUserWithEmailAndPassword(auth, email, password);
-                                 await setDoc(doc(db,'artifacts',appId,'public_users',uc.user.uid),{email:uc.user.email,active:false});
+                                 await setDoc(doc(db,'artifacts',appId,'public_users',uc.user.uid),{email:uc.user.email,active:false,archived:false});
                                  await setDoc(doc(db,'artifacts',appId,'users',uc.user.uid,'data','finance'),{...DEFAULT_DATA});
                              } else throw e;
                         }
