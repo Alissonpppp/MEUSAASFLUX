@@ -728,8 +728,8 @@
                         </div>
                         <div className="divide-y">
                             {localData.transactions.slice().reverse().map(t=>(
-                                <div key={t.id} className="py-3 flex justify-between text-sm items-center">
-                                    <div>
+                                <div key={t.id} className="py-3 flex justify-between text-sm items-center group">
+                                    <div className="flex-1">
                                         <p className="font-medium text-slate-800">{t.desc}</p>
                                         <div className="flex gap-2 text-xs text-slate-400">
                                             <span>{new Date(t.date).toLocaleDateString('pt-BR')}</span>
@@ -737,9 +737,22 @@
                                             <span>{t.category}</span>
                                         </div>
                                     </div>
-                                    <span className={`font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>
-                                        {t.type === 'expense' ? '-' : '+'} R$ {t.amount.toFixed(2)}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className={`font-bold ${t.type==='income'?'text-green-600':'text-red-600'}`}>
+                                            {t.type === 'expense' ? '-' : '+'} R$ {t.amount.toFixed(2)}
+                                        </span>
+                                        <button 
+                                            onClick={() => {
+                                                if(confirm('Tem certeza que deseja apagar essa transação?')) {
+                                                    saveToCloud({...localData, transactions: localData.transactions.filter(x => x.id !== t.id)});
+                                                }
+                                            }}
+                                            className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                            title="Apagar"
+                                        >
+                                            <Icons.Trash />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -754,12 +767,25 @@
                             {list.length===0 ? <p className="text-slate-400">Vazio.</p> : (
                                 <div className="divide-y">
                                     {list.slice().reverse().map(t=>(
-                                        <div key={t.id} className="py-3 flex justify-between items-center">
-                                            <div>
+                                        <div key={t.id} className="py-3 flex justify-between items-center group">
+                                            <div className="flex-1">
                                                 <p className="text-sm font-medium text-slate-800">{t.desc}</p>
                                                 <p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString('pt-BR')} • {t.category}</p>
                                             </div>
-                                            <span className="font-bold text-slate-700">R$ {t.amount.toFixed(2)}</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-bold text-slate-700">R$ {t.amount.toFixed(2)}</span>
+                                                <button 
+                                                    onClick={() => {
+                                                        if(confirm('Tem certeza que deseja apagar essa transação?')) {
+                                                            saveToCloud({...localData, transactions: localData.transactions.filter(x => x.id !== t.id)});
+                                                        }
+                                                    }}
+                                                    className="text-slate-300 hover:text-red-500 transition-colors p-1"
+                                                    title="Apagar"
+                                                >
+                                                    <Icons.Trash />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
