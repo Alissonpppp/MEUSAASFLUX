@@ -80,6 +80,13 @@
     <script type="text/babel">
         // --- CONSTANTES ---
         const Icons = {
+            Logo: ({ className = "w-10 h-10" }) => (
+                <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100" height="100" rx="24" className="fill-brand-600"/>
+                    <path d="M25 65L40 45L55 60L75 30" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M75 30H55" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
+                </svg>
+            ),
             Dashboard: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
             Income: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
             Expense: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>,
@@ -519,7 +526,11 @@
                 return (
                     <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4 font-sans">
                         <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 border border-slate-200">
-                            <div className="text-center mb-6"><h1 className="text-3xl font-bold text-slate-800">Flux<span className="text-brand-600">Blue</span></h1><p className="text-slate-500 text-sm">Acesso ao Sistema</p></div>
+                            <div className="text-center mb-6">
+                                <div className="flex justify-center mb-2"><Icons.Logo className="w-16 h-16" /></div>
+                                <h1 className="text-3xl font-bold text-slate-800">Flux<span className="text-brand-600">Blue</span></h1>
+                                <p className="text-slate-500 text-sm">Acesso ao Sistema</p>
+                            </div>
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-200">{error}</div>}
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <input required type="email" className="w-full border rounded-lg p-3 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
@@ -892,7 +903,10 @@
                     <div className="flex h-screen bg-slate-50 font-sans">
                         {toast && <Toast msg={toast} />}
                         <aside className="w-64 bg-slate-900 text-slate-300 flex-col hidden md:flex overflow-y-auto">
-                            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2 shrink-0 sticky top-0 z-10"><span className="text-white font-bold text-lg">FluxBlue</span></div>
+                            <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-900 gap-2 shrink-0 sticky top-0 z-10">
+                                <Icons.Logo className="w-8 h-8" />
+                                <span className="text-white font-bold text-lg">FluxBlue</span>
+                            </div>
                             <nav className="flex-1 py-4 px-3 space-y-1">
                                 {menuItems.map(item => (
                                     <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${view===item.id ? 'bg-brand-600 text-white' : 'hover:bg-slate-800 hover:text-white'}`}><span className="mr-3">{item.icon}</span>{item.label}</button>
@@ -906,12 +920,26 @@
                         <main className="flex-1 overflow-y-auto pb-24 md:pb-0 relative">
                             {mobileMenuOpen && (
                                 <div className="fixed inset-0 bg-slate-900/95 z-50 p-6 animate-fade-in md:hidden overflow-y-auto">
-                                    <div className="flex justify-between items-center mb-8"><h2 className="text-white text-2xl font-bold">Menu</h2><button onClick={()=>setMobileMenuOpen(false)} className="text-white bg-slate-800 p-2 rounded-full font-bold">✕</button></div>
+                                    <div className="flex justify-between items-center mb-8">
+                                        <div className="flex items-center gap-2">
+                                             <Icons.Logo className="w-8 h-8" />
+                                             <h2 className="text-white text-2xl font-bold">Menu</h2>
+                                        </div>
+                                        <button onClick={()=>setMobileMenuOpen(false)} className="text-white bg-slate-800 p-2 rounded-full font-bold">✕</button>
+                                    </div>
                                     <div className="grid grid-cols-3 gap-4">{menuItems.map(item => (<button key={item.id} onClick={()=>{setView(item.id); setMobileMenuOpen(false);}} className="flex flex-col items-center justify-center bg-slate-800 p-4 rounded-xl text-slate-300 hover:bg-brand-600 hover:text-white transition"><div className="mb-2 text-brand-400">{item.icon}</div><span className="text-xs font-medium">{item.label}</span></button>))}</div>
                                 </div>
                             )}
                             <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm">
-                                <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2"><span className="md:hidden text-brand-600">{menuItems.find(i=>i.id===view)?.icon}</span>{menuItems.find(i=>i.id===view)?.label}</h2>
+                                <div className="flex items-center gap-3">
+                                    <div className="md:hidden text-brand-600">
+                                        <Icons.Logo className="w-8 h-8" />
+                                    </div>
+                                    <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2">
+                                        <span className="md:hidden text-brand-600">{menuItems.find(i=>i.id===view)?.icon}</span>
+                                        {menuItems.find(i=>i.id===view)?.label}
+                                    </h2>
+                                </div>
                                 <div className="flex items-center gap-3">
                                     <input type="month" value={currentMonth} onChange={e=>setCurrentMonth(e.target.value)} className="bg-slate-100 border-none text-xs rounded p-1 text-slate-600 font-bold" />
                                     <div className={`hidden md:flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-slate-100 ${userLevel.color}`}>{userLevel.icon} {userLevel.title}</div>
