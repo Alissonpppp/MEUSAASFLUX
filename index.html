@@ -1,950 +1,3067 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FluxBlue - Gestão Financeira Completa</title>
-    
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.8.0/umd/Recharts.js"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080808">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
+<title>StreamBox+</title>
 
-        window.FirebaseSDK = {
-            initializeApp,
-            auth: { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup },
-            firestore: { getFirestore, doc, onSnapshot, setDoc, getDoc }
-        };
-        window.dispatchEvent(new Event('firebase-ready'));
-    </script>
+<style>
+:root{
+  --bg:#080808;
+  --panel:#151515;
+  --panel2:#202020;
+  --text:#fff;
+  --muted:#aaa;
+  --red:#e50914;
+}
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
-                    colors: { 
-                        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' },
-                        slate: { 850: '#1a2234', 900: '#0f172a' }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body { background-color: #f8fafc; color: #0f172a; -webkit-tap-highlight-color: transparent; }
-        .card-shadow { box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+}
+
+body{
+  overflow-x:hidden;
+  padding-bottom:70px;
+}
+
+button,input,select{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+.hidden{
+  display:none!important;
+}
+
+/* TOPO */
+
+header{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:rgba(8,8,8,.96);
+  backdrop-filter:blur(12px);
+  padding:
+    calc(10px + env(safe-area-inset-top))
+    14px
+    10px;
+}
+
+.top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo{
+  font-size:23px;
+  font-weight:900;
+  white-space:nowrap;
+}
+
+.logo span{
+  color:var(--red);
+}
+
+.search{
+  margin-left:auto;
+  width:min(330px,40vw);
+  background:#181818;
+  border:1px solid #333;
+  color:white;
+  padding:10px 12px;
+  border-radius:7px;
+  outline:none;
+}
+
+.gear{
+  border:0;
+  background:#222;
+  color:#fff;
+  border-radius:8px;
+  width:42px;
+  height:42px;
+}
+
+/* DESTAQUE */
+
+.hero{
+  position:relative;
+  min-height:430px;
+  height:62vh;
+  max-height:650px;
+  display:flex;
+  align-items:flex-end;
+  background:
+    radial-gradient(circle at 75% 25%,rgba(229,9,20,.30),transparent 25%),
+    linear-gradient(120deg,#252525,#070707 70%);
+}
+
+.heroImage{
+  position:absolute;
+  inset:0;
+  background-size:cover;
+  background-position:center top;
+}
+
+.heroImage:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(0deg,#080808 0%,rgba(8,8,8,.25) 45%,rgba(0,0,0,.1)),
+    linear-gradient(90deg,rgba(0,0,0,.8),rgba(0,0,0,.1));
+}
+
+.heroContent{
+  position:relative;
+  z-index:2;
+  padding:30px 4vw 70px;
+  max-width:700px;
+}
+
+.hero h1{
+  font-size:clamp(34px,6vw,70px);
+  line-height:1;
+  margin:0 0 14px;
+}
+
+.hero p{
+  color:#ddd;
+  line-height:1.45;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:16px;
+}
+
+.primary,
+.secondary{
+  border:0;
+  padding:12px 17px;
+  border-radius:7px;
+  font-weight:800;
+}
+
+.primary{
+  background:white;
+  color:black;
+}
+
+.secondary{
+  background:#555a;
+  color:white;
+}
+
+/* CONTEÚDO */
+
+main{
+  position:relative;
+  z-index:3;
+  margin-top:-40px;
+  padding:0 4vw 50px;
+}
+
+#status{
+  color:#aaa;
+  font-size:13px;
+  margin-bottom:18px;
+}
+
+.row{
+  margin-bottom:28px;
+}
+
+.row h2{
+  margin:0 0 10px;
+  font-size:20px;
+}
+
+.cards{
+  display:flex;
+  gap:9px;
+  overflow-x:auto;
+  padding:3px 3px 14px;
+  scroll-snap-type:x mandatory;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+
+.cards::-webkit-scrollbar{
+  display:none;
+}
+
+.card{
+  border:0;
+  padding:0;
+  color:white;
+  text-align:left;
+  background:#181818;
+  position:relative;
+  flex:0 0 min(180px,16vw);
+  aspect-ratio:2/3;
+  border-radius:7px;
+  overflow:hidden;
+  scroll-snap-align:start;
+}
+
+.card img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.fallback{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  text-align:center;
+  padding:14px;
+  background:linear-gradient(145deg,#292929,#101010);
+  font-weight:800;
+}
+
+.cardInfo{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  padding:40px 9px 9px;
+  background:linear-gradient(transparent,rgba(0,0,0,.95));
+}
+
+.cardTitle{
+  font-size:13px;
+  font-weight:800;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.progress{
+  height:3px;
+  background:#555;
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:5px;
+}
+
+.progress span{
+  display:block;
+  height:100%;
+  background:var(--red);
+}
+
+.listMark{
+  position:absolute;
+  right:7px;
+  top:7px;
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  background:#000b;
+  border:1px solid #aaa;
+  display:grid;
+  place-items:center;
+}
+
+/* MENU MOBILE */
+
+.mobileNav{
+  position:fixed;
+  z-index:60;
+  bottom:0;
+  left:0;
+  right:0;
+  display:none;
+  background:#090909f5;
+  border-top:1px solid #252525;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+.mobileNav button{
+  flex:1;
+  border:0;
+  background:transparent;
+  color:#999;
+  padding:9px 2px;
+  font-size:11px;
+}
+
+.mobileNav button.active{
+  color:white;
+}
+
+/* MODAL */
+
+.modal{
+  position:fixed;
+  z-index:100;
+  inset:0;
+  background:#000d;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:20px;
+}
+
+.modalBox{
+  position:relative;
+  background:#151515;
+  width:min(600px,100%);
+  margin:5vh auto;
+  border-radius:12px;
+  padding:25px;
+}
+
+.close{
+  position:absolute;
+  right:12px;
+  top:12px;
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:#292929;
+  color:white;
+  font-size:22px;
+}
+
+.tabs{
+  display:flex;
+  gap:7px;
+  margin:20px 0;
+  overflow-x:auto;
+}
+
+.tabs button{
+  border:0;
+  color:white;
+  background:#252525;
+  border-radius:7px;
+  padding:9px 12px;
+  white-space:nowrap;
+}
+
+.tabs button.active{
+  background:var(--red);
+}
+
+.form{
+  display:grid;
+  gap:13px;
+}
+
+.form label{
+  display:grid;
+  gap:6px;
+  color:#ddd;
+  font-size:13px;
+}
+
+.form input{
+  background:#0c0c0c;
+  color:white;
+  border:1px solid #3b3b3b;
+  padding:12px;
+  border-radius:7px;
+  font-size:16px;
+}
+
+.red{
+  background:var(--red);
+  color:white;
+  border:0;
+  padding:12px;
+  border-radius:7px;
+  font-weight:800;
+}
+
+/* DETALHES */
+
+.detailImage{
+  height:340px;
+  background-size:cover;
+  background-position:center;
+  border-radius:9px;
+  position:relative;
+}
+
+.detailImage:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(0deg,#151515,transparent 70%);
+}
+
+.detailContent{
+  position:relative;
+  margin-top:-80px;
+  z-index:2;
+}
+
+.detailContent h2{
+  font-size:32px;
+}
+
+.episodes{
+  display:grid;
+  gap:7px;
+  margin-top:20px;
+}
+
+.episode{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:12px;
+  background:#222;
+  border-radius:7px;
+}
+
+.episode button{
+  border:0;
+  background:#444;
+  color:white;
+  border-radius:7px;
+  padding:9px;
+}
+
+/* PLAYER */
+
+.playerModal{
+  background:#000;
+  padding:0;
+  overflow:hidden;
+}
+
+.player{
+  width:100vw;
+  height:100dvh;
+  position:relative;
+}
+
+video{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  background:black;
+}
+
+.back{
+  position:absolute;
+  top:calc(12px + env(safe-area-inset-top));
+  left:12px;
+  z-index:5;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  border:0;
+  background:#111c;
+  color:white;
+  font-size:21px;
+}
+
+/* CELULAR */
+
+@media(max-width:650px){
+
+  header{
+    padding-left:10px;
+    padding-right:10px;
+  }
+
+  .top{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+  }
+
+  .logo{
+    font-size:19px;
+  }
+
+  .search{
+    grid-row:2;
+    grid-column:1 / -1;
+    width:100%;
+    margin-top:5px;
+    font-size:16px;
+  }
+
+  .hero{
+    height:58vh;
+  }
+
+  .heroContent{
+    padding:20px 14px 55px;
+  }
+
+  .hero h1{
+    font-size:35px;
+  }
+
+  .hero p{
+    font-size:14px;
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  main{
+    padding:0 11px 70px;
+    margin-top:-25px;
+  }
+
+  .card{
+    flex-basis:42vw;
+  }
+
+  .mobileNav{
+    display:flex;
+  }
+
+  .modal{
+    padding:0;
+  }
+
+  .modalBox{
+    margin:0;
+    width:100%;
+    min-height:100dvh;
+    border-radius:0;
+    padding:65px 15px 30px;
+  }
+
+  .close{
+    position:fixed;
+    top:calc(12px + env(safe-area-inset-top));
+    right:12px;
+    z-index:120;
+  }
+
+  .detailImage{
+    height:48vh;
+  }
+
+}
+</style>
 </head>
-<body class="antialiased selection:bg-brand-500 selection:text-white">
-    <div id="root"><div class="h-screen flex items-center justify-center"><div class="loader"></div></div></div>
 
-    <script type="text/babel">
-        const Icons = {
-            Logo: ({ className = "w-8 h-8" }) => (
-                <svg viewBox="0 0 100 100" className={className} fill="none"><rect width="100" height="100" rx="28" className="fill-brand-600"/><path d="M30 65L45 45L60 60L75 30" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/><circle cx="75" cy="30" r="5" fill="white" /></svg>
-            ),
-            Dashboard: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect width="7" height="9" x="3" y="3" rx="2"/><rect width="7" height="5" x="14" y="3" rx="2"/><rect width="7" height="9" x="14" y="12" rx="2"/><rect width="7" height="5" x="3" y="16" rx="2"/></svg>,
-            Transactions: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M7 15h0M17 9h0M12 12h0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>,
-            Debts: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="m15 9-6 6"/><path d="M9 9h.01"/><path d="M15 15h.01"/><rect width="20" height="14" x="2" y="5" rx="2"/></svg>,
-            Budgets: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-            Goals: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>,
-            Profile: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>,
-            Trash: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
-            Google: () => <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/></svg>,
-            Lock: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
-            Plus: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5v14"/></svg>,
-            Flame: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>,
-            TrendingUp: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        };
+<body>
 
-        const DEFAULT_DATA = {
-            transactions: [], goals: [], debts: [], 
-            budgets: [
-                { category: 'Casa', limit: 1500 }, { category: 'Mercado', limit: 800 },
-                { category: 'Lazer', limit: 400 }, { category: 'Transporte', limit: 300 }
-            ],
-            incomeForecasts: [
-                { id: 1, source: 'Salário Principal', expectedAmount: 3000 }
-            ],
-            customCategories: ['Casa', 'Mercado', 'Lazer', 'Saúde', 'Transporte', 'Salário', 'Investimento', 'Dívidas'],
-            settings: { userName: 'Usuário' },
-            subscription: { active: true, expiresAt: new Date(Date.now() + 7*24*60*60*1000).toISOString() }
-        };
+<header>
 
-        function startApp() {
-            const { initializeApp } = window.FirebaseSDK;
-            const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } = window.FirebaseSDK.auth;
-            const { getFirestore, doc, onSnapshot, setDoc, getDoc } = window.FirebaseSDK.firestore;
+<div class="top">
 
-            const firebaseConfig = {
-                apiKey: "AIzaSyB5I6RG-FicgOThwhl-1LLWySo3JRjK1YI",
-                authDomain: "bompre-8a7c0.firebaseapp.com",
-                projectId: "bompre-8a7c0",
-                storageBucket: "bompre-8a7c0.firebasestorage.app",
-                messagingSenderId: "390830730249",
-                appId: "1:390830730249:web:106a313c6d2bae02ec5cd8"
-            };
+<div class="logo">
+STREAM<span>BOX+</span>
+</div>
 
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-            const appId = 'fluxblue-prod-v6';
+<input
+id="search"
+class="search"
+placeholder="Buscar filmes, séries..."
+>
 
-            const { useState, useEffect, useMemo } = React;
-            const { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } = window.Recharts || {};
+<button class="gear" onclick="openSettings()">
+⚙
+</button>
 
-            const AuthScreen = () => {
-                const [email, setEmail] = useState(''); const [password, setPassword] = useState('');
-                const [error, setError] = useState(''); const [loading, setLoading] = useState(false);
+</div>
 
-                const createInitialUserData = async (uid, userEmail) => {
-                    const docRef = doc(db, 'artifacts', appId, 'public_users', uid);
-                    const docSnap = await getDoc(docRef);
-                    if (!docSnap.exists()) {
-                        const exp = new Date(); exp.setDate(exp.getDate() + 7);
-                        await setDoc(docRef, { email: userEmail, active: true, archived: false, expiresAt: exp.toISOString() });
-                        await setDoc(doc(db, 'artifacts', appId, 'users', uid, 'data', 'finance'), { ...DEFAULT_DATA, subscription: { active: true, expiresAt: exp.toISOString() } });
-                    }
-                };
+</header>
 
-                const handleSubmit = async (e) => {
-                    e.preventDefault(); setError(''); setLoading(true);
-                    try { 
-                        try { await signInWithEmailAndPassword(auth, email, password); } 
-                        catch (e) { 
-                             if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential'){
-                                 const uc = await createUserWithEmailAndPassword(auth, email, password);
-                                 await createInitialUserData(uc.user.uid, uc.user.email);
-                             } else throw e;
-                        }
-                    } catch (err) { setError("Credenciais inválidas ou erro de conexão."); } finally { setLoading(false); }
-                };
 
-                const handleGoogleLogin = async () => {
-                    setLoading(true);
-                    try {
-                        const res = await signInWithPopup(auth, new GoogleAuthProvider());
-                        await createInitialUserData(res.user.uid, res.user.email);
-                    } catch (err) { setError("Erro com Google: " + err.message); } finally { setLoading(false); }
-                };
+<section class="hero">
 
-                return (
-                    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-                        <div className="max-w-md w-full bg-white rounded-3xl card-shadow p-8 border border-slate-100">
-                            <div className="text-center mb-8">
-                                <div className="inline-flex p-3 bg-brand-50 rounded-2xl mb-3 text-brand-600"><Icons.Logo className="w-10 h-10" /></div>
-                                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Flux<span className="text-brand-600">Blue</span></h1>
-                                <p className="text-slate-500 text-sm mt-1">Sua vida financeira no controle</p>
-                            </div>
-                            {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-xs font-semibold rounded-xl border border-rose-100">{error}</div>}
-                            <form onSubmit={handleSubmit} className="space-y-3">
-                                <input required type="email" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand-600 focus:bg-white transition" placeholder="Seu e-mail" value={email} onChange={e=>setEmail(e.target.value)} />
-                                <input required type="password" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand-600 focus:bg-white transition" placeholder="Sua senha" value={password} onChange={e=>setPassword(e.target.value)} />
-                                <button disabled={loading} className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition active:scale-[0.98]">Acessar Conta</button>
-                            </form>
-                            <div className="relative my-6"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-3 text-slate-400 font-bold tracking-wider">Ou continue com</span></div></div>
-                            <button onClick={handleGoogleLogin} disabled={loading} className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-3.5 rounded-xl flex items-center justify-center gap-3 transition active:scale-[0.98]">
-                                <Icons.Google /> Google
-                            </button>
-                        </div>
-                    </div>
-                );
-            };
+<div id="heroImage" class="heroImage"></div>
 
-            const Paywall = ({ user }) => (
-                <div className="min-h-screen flex items-center justify-center bg-slate-900 p-4 text-center">
-                    <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8">
-                        <div className="mx-auto bg-rose-100 text-rose-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6"><Icons.Lock /></div>
-                        <h2 className="text-2xl font-extrabold text-slate-900 mb-2">Período de teste encerrado</h2>
-                        <p className="text-slate-500 mb-6 text-sm">Renove sua assinatura para manter o controle total das suas finanças e continuar saindo das dívidas.</p>
-                        <a href="https://pay.cakto.com.br/scbctc9_679715" target="_blank" className="block w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition mb-3">Renovar Assinatura Agora</a>
-                        <button onClick={()=>window.location.reload()} className="text-brand-600 text-xs font-bold hover:underline mb-6 block w-full">Já realizei o pagamento</button>
-                        <div className="border-t border-slate-100 pt-4">
-                            <button onClick={() => signOut(auth)} className="text-xs text-slate-400 font-medium">Sair da conta ({user.email})</button>
-                        </div>
-                    </div>
-                </div>
-            );
+<div class="heroContent">
 
-            // COMPONENTE DO CHAT BLINDADO E COM PERSONALIDADE ENTUSIASTA
-            const AIChatAssistant = ({ localData, saveToCloud, balance, monthlyExp, monthlyInc, totalDebtsRemaining }) => {
-                const [isOpen, setIsOpen] = useState(false);
-                const [messages, setMessages] = useState([
-                    { id: 1, sender: 'bot', text: 'Olá! 👋 Seja super bem-vindo(a)! Sou o Flux AI 🤖! Estou aqui pra te dar conselhos incríveis, bater um papo sobre suas finanças ou anotar gastos rápidos pra você! Vamos decolar? 🚀✨' }
-                ]);
-                const [input, setInput] = useState('');
-                const [loading, setLoading] = useState(false);
-                const [selectedImage, setSelectedImage] = useState(null);
+<h1 id="heroTitle">
+Seu catálogo
+</h1>
 
-                const handleImageSelect = (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => setSelectedImage(reader.result);
-                        reader.readAsDataURL(file);
-                    }
-                };
+<p id="heroDescription">
+Conecte sua lista ou servidor.
+</p>
 
-                const handleSend = async (e) => {
-                    e.preventDefault();
-                    if (!input && !selectedImage) return;
+<div class="actions">
 
-                    const userMsg = { 
-                        id: Date.now(), 
-                        sender: 'user', 
-                        text: input || '📷 [Comprovante anexado]', 
-                        image: selectedImage 
-                    };
-                    
-                    setMessages(prev => [...prev, userMsg]);
-                    setInput('');
-                    const imgToSend = selectedImage;
-                    setSelectedImage(null);
-                    setLoading(true);
+<button
+class="primary"
+onclick="heroPlay()">
+▶ Assistir
+</button>
 
-                    try {
-                        const _segredo = [
-                            'QVEuQWI4Uk42TERSVXJQ', 
-                            'S3QxOUFJMUo4RGt1R3J1', 
-                            'N05hYXB5UWpwV3BXdnhVdWVNejd3MkE='
-                        ];
-                        const API_KEY = atob(_segredo.join(''));
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+<button
+class="secondary"
+onclick="heroDetails()">
+ⓘ Informações
+</button>
 
-                        const sSaldo = (balance || 0).toFixed(2);
-                        const sGastoMes = (monthlyExp || 0).toFixed(2);
-                        const sRecMes = (monthlyInc || 0).toFixed(2);
-                        const sDiv = (totalDebtsRemaining || 0).toFixed(2);
-                        
-                        const historicoRecente = (localData.transactions || []).slice(0, 5)
-                            .map(t => `${t.desc}: R$ ${t.amount.toFixed(2)} (${t.type === 'income' ? 'Receita' : 'Despesa'})`).join(' | ');
+</div>
 
-                        const promptSistema = `Você é o Flux AI, um consultor financeiro criativo, empático e inteligente do aplicativo FluxBlue.
+</div>
 
-SUA EXPRESSÃO DEVE SER:
-- Entusiasta, motivadora e parceira.
-- Concisa, direta ao ponto e evitando textos longos ou cansativos.
-- Sempre utilize emojis em saudações e para destacar conquistas ou valores financeiros! 🌟🔥💸
+</section>
 
-DADOS EM TEMPO REAL DA CONTA DO USUÁRIO AGORA:
-- Saldo Atual: R$ ${sSaldo}
-- Total Gasto no Mês Atual: R$ ${sGastoMes}
-- Total Recebido no Mês Atual: R$ ${sRecMes}
-- Dívidas Restantes: R$ ${sDiv}
-- Últimos lançamentos: ${historicoRecente || 'Nenhum lançamento recente'}
 
-COMO SE COMPORTAR:
-1. MODO CONVERSA: Se o usuário apenas puxar assunto, dar oi ou pedir conselhos ("como estão minhas contas?", "dica para economizar", "dá pra gastar hoje?"): analise os números acima com muito entusiasmo e dê uma resposta curta e motivadora no "botReply". Mantenha "isTransaction": false e "amount": 0.
-2. MODO LANÇAMENTO: Se digitar um gasto/receita ("Mercado 45", "Salário 2000") OU enviar foto de cupom: extraia os valores, preencha os dados e confirme com festa e alegria no "botReply". Mantenha "isTransaction": true.
+<main>
 
-FORMATO OBRIGATÓRIO DE RESPOSTA (Retorne UNICAMENTE um JSON estrito sem crases de formatação Markdown):
+<div id="status">
+Nenhuma fonte conectada.
+</div>
+
+<div id="content"></div>
+
+</main>
+
+
+<nav class="mobileNav">
+
+<button
+data-view="home"
+class="active">
+⌂<br>Início
+</button>
+
+<button data-view="live">
+●<br>Ao vivo
+</button>
+
+<button data-view="vod">
+▣<br>Filmes
+</button>
+
+<button data-view="series">
+▤<br>Séries
+</button>
+
+<button data-view="mylist">
+＋<br>Minha Lista
+</button>
+
+</nav>
+
+
+<!-- CONFIGURAÇÃO -->
+
+<div
+id="settings"
+class="modal hidden">
+
+<div class="modalBox">
+
+<button
+class="close"
+onclick="closeModal('settings')">
+×
+</button>
+
+<h2>Fonte</h2>
+
+<div class="tabs">
+
+<button
+id="m3uTab"
+class="active"
+onclick="sourceTab('m3u')">
+M3U
+</button>
+
+<button
+id="xtreamTab"
+onclick="sourceTab('xtream')">
+Xtream Codes
+</button>
+
+</div>
+
+
+<div id="m3uSettings">
+
+<form
+class="form"
+onsubmit="loadM3U(event)">
+
+<label>
+
+Arquivo M3U
+
+<input
+id="m3uFile"
+type="file"
+accept=".m3u,.m3u8,text/plain">
+
+</label>
+
+<label>
+
+URL M3U
+
+<input
+id="m3uUrl"
+placeholder="https://servidor/lista.m3u">
+
+</label>
+
+<button class="red">
+Carregar
+</button>
+
+</form>
+
+</div>
+
+
+<div
+id="xtreamSettings"
+class="hidden">
+
+<form
+class="form"
+onsubmit="connectXtream(event)">
+
+<label>
+
+Servidor
+
+<input
+id="server"
+placeholder="http://servidor:porta"
+required>
+
+</label>
+
+<label>
+
+Usuário
+
+<input
+id="username"
+required>
+
+</label>
+
+<label>
+
+Senha
+
+<input
+id="password"
+type="password"
+required>
+
+</label>
+
+<button class="red">
+Entrar
+</button>
+
+</form>
+
+</div>
+
+<p style="
+color:#888;
+font-size:12px;
+line-height:1.5;
+margin-top:20px;
+">
+
+Os dados de progresso e Minha Lista são
+salvos somente neste navegador.
+
+</p>
+
+</div>
+
+</div>
+
+
+<!-- DETALHES -->
+
+<div
+id="details"
+class="modal hidden">
+
+<div class="modalBox">
+
+<button
+class="close"
+onclick="closeModal('details')">
+×
+</button>
+
+<div
+id="detailImage"
+class="detailImage">
+</div>
+
+<div class="detailContent">
+
+<h2 id="detailTitle"></h2>
+
+<p
+id="detailDescription"
+style="color:#bbb">
+</p>
+
+<div class="actions">
+
+<button
+id="detailPlay"
+class="primary">
+▶ Assistir
+</button>
+
+<button
+id="listButton"
+class="secondary">
+＋ Minha Lista
+</button>
+
+</div>
+
+<div
+id="episodeArea"
+class="episodes">
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- PLAYER -->
+
+<div
+id="playerModal"
+class="modal playerModal hidden">
+
+<div class="player">
+
+<button
+class="back"
+onclick="closePlayer()">
+←
+</button>
+
+<video
+id="video"
+controls
+playsinline
+webkit-playsinline>
+</video>
+
+</div>
+
+</div>
+
+
+<script>
+
+const $ = selector =>
+document.querySelector(selector);
+
+const $$ = selector =>
+[...document.querySelectorAll(selector)];
+
+
+const STORE = "streambox_iphone_v1";
+
+
+let database = {
+progress:{},
+mylist:{}
+};
+
+
+try{
+
+const saved =
+localStorage.getItem(STORE);
+
+if(saved)
+database =
+JSON.parse(saved);
+
+}catch(e){}
+
+
+function save(){
+
+try{
+
+localStorage.setItem(
+STORE,
+JSON.stringify(database)
+);
+
+}catch(e){}
+
+}
+
+
+const state = {
+
+source:null,
+
+items:[],
+
+view:"home",
+
+creds:null,
+
+catalog:{
+live:null,
+vod:null,
+series:null
+},
+
+hero:null,
+
+detail:null,
+
+seriesInfo:null,
+
+playing:null
+
+};
+
+
+function openSettings(){
+
+$("#settings")
+.classList.remove("hidden");
+
+}
+
+
+function closeModal(id){
+
+$("#"+id)
+.classList.add("hidden");
+
+}
+
+
+function sourceTab(type){
+
+$("#m3uTab")
+.classList.toggle(
+"active",
+type==="m3u"
+);
+
+$("#xtreamTab")
+.classList.toggle(
+"active",
+type==="xtream"
+);
+
+$("#m3uSettings")
+.classList.toggle(
+"hidden",
+type!=="m3u"
+);
+
+$("#xtreamSettings")
+.classList.toggle(
+"hidden",
+type!=="xtream"
+);
+
+}
+
+
+function cleanServer(url){
+
+url =
+url.trim()
+.replace(/\/+$/,"");
+
+if(
+!/^https?:\/\//i.test(url)
+)
+
+url =
+"http://" + url;
+
+return url;
+
+}
+
+
+function xtreamURL(action=""){
+
+const c =
+state.creds;
+
+let url =
+
+cleanServer(c.server) +
+
+"/player_api.php" +
+
+"?username=" +
+
+encodeURIComponent(c.username) +
+
+"&password=" +
+
+encodeURIComponent(c.password);
+
+if(action)
+
+url +=
+"&action=" + action;
+
+return url;
+
+}
+
+
+async function json(url){
+
+const response =
+await fetch(
+url,
 {
-  "isTransaction": true ou false,
-  "desc": "Nome curto do gasto (deixe vazio se for apenas conversa)",
-  "amount": 00.00,
-  "type": "expense" ou "income",
-  "category": "Casa", "Mercado", "Lazer", "Saúde", "Transporte", "Salário", "Dívidas" ou "Outros",
-  "botReply": "Sua resposta curta, entusiasta e cheia de emojis aqui!"
-}`;
+cache:"no-store"
+}
+);
 
-                        const partes = [{ text: `${promptSistema}\n\nMensagem do usuário: ${userMsg.text}` }];
+if(!response.ok)
 
-                        if (imgToSend) {
-                            const base64Data = imgToSend.split(',')[1];
-                            const mimeType = imgToSend.split(';')[0].split(':')[1];
-                            partes.push({
-                                inline_data: {
-                                    mime_type: mimeType,
-                                    data: base64Data
-                                }
-                            });
-                        }
+throw new Error(
+"HTTP " +
+response.status
+);
 
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: partes }],
-                                generationConfig: { response_mime_type: "application/json" }
-                            })
-                        });
+return response.json();
 
-                        const data = await response.json();
-                        
-                        if (!response.ok) {
-                            const erroGoogle = data.error?.message || 'Erro de autorização no Google';
-                            console.error("Erro do Google Cloud:", data.error);
-                            throw new Error(`Google API: ${erroGoogle}`);
-                        }
+}
 
-                        const textoResposta = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                        
-                        const matchJson = textoResposta.match(/\{[\s\S]*\}/);
-                        if (!matchJson) {
-                            throw new Error("Formato de resposta incompatível.");
-                        }
-                        
-                        const iaResult = JSON.parse(matchJson[0]);
 
-                        if (iaResult.isTransaction && iaResult.amount && Number(iaResult.amount) > 0) {
-                            const newTx = {
-                                id: Date.now(),
-                                desc: iaResult.desc || 'Gasto IA',
-                                amount: Number(iaResult.amount),
-                                type: iaResult.type === 'income' ? 'income' : 'expense',
-                                category: iaResult.category || 'Outros',
-                                date: new Date().toISOString()
-                            };
-                            await saveToCloud({
-                                ...localData,
-                                transactions: [newTx, ...(localData.transactions || [])]
-                            });
-                        }
+/* M3U */
 
-                        setMessages(prev => [...prev, { id: Date.now()+1, sender: 'bot', text: iaResult.botReply || 'Show de bola! 🎉 Registrado com sucesso! Algo mais em que posso te ajudar hoje? 😎🚀' }]);
+async function loadM3U(event){
 
-                    } catch (error) {
-                        console.error("Erro detalhado do Flux AI:", error);
-                        let msgErro = 'Opa! 😅 Tive um pequeno soluço na conexão! Pode repetir pra mim por favor? 🙏⚡';
-                        if (error.message.includes('Google API')) {
-                            msgErro = `⚠️ Aviso do Sistema: ${error.message} (Verifique se há restrições de domínio ou cota excedida na sua chave API do Google).`;
-                        }
-                        setMessages(prev => [...prev, { id: Date.now()+1, sender: 'bot', text: msgErro }]);
-                    } finally {
-                        setLoading(false);
-                    }
-                };
+event.preventDefault();
 
-                return (
-                    <div className="fixed bottom-6 right-6 z-50">
-                        {!isOpen ? (
-                            <button onClick={() => setIsOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white p-4 rounded-full shadow-2xl flex items-center gap-2 font-bold text-sm transition transform hover:scale-105 active:scale-95">
-                                <span className="text-xl">🤖</span>
-                                <span className="hidden sm:inline font-extrabold">Flux AI</span>
-                            </button>
-                        ) : (
-                            <div className="bg-white w-80 sm:w-96 h-[480px] rounded-3xl card-shadow border border-slate-200 flex flex-col overflow-hidden animate-fade-in shadow-2xl">
-                                <div className="bg-slate-900 text-white p-4 flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xl">🤖</span>
-                                        <div><h4 className="font-bold text-sm">Flux AI</h4><span className="text-[10px] text-emerald-400 font-semibold block">● Consultor & Assistente</span></div>
-                                    </div>
-                                    <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-white font-bold px-2 text-lg">✕</button>
-                                </div>
+try{
 
-                                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 text-xs font-medium">
-                                    {messages.map(m => (
-                                        <div key={m.id} className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}>
-                                            <div className={`max-w-[85%] p-3 rounded-2xl ${m.sender === 'user' ? 'bg-brand-600 text-white rounded-br-none shadow-md' : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none shadow-sm'}`}>
-                                                {m.image && <img src={m.image} alt="Anexo" className="w-full h-32 object-cover rounded-lg mb-2 border border-white/20" />}
-                                                <p className="leading-relaxed whitespace-pre-line">{m.text}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {loading && <div className="text-brand-600 text-[11px] font-bold animate-pulse">⚡ Flux AI está analisando seus dados com tudo... 🚀✨</div>}
-                                </div>
+let text = "";
 
-                                {selectedImage && (
-                                    <div className="px-3 py-1.5 bg-brand-50 border-t border-brand-100 flex justify-between items-center text-[11px] text-brand-700 font-bold">
-                                        <span>📷 Comprovante pronto para envio</span>
-                                        <button onClick={() => setSelectedImage(null)} className="text-rose-500 hover:underline">Remover</button>
-                                    </div>
-                                )}
+const file =
+$("#m3uFile").files[0];
 
-                                <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-100 flex items-center gap-2">
-                                    <label className="cursor-pointer text-slate-400 hover:text-brand-600 p-2 rounded-xl hover:bg-slate-50 transition text-lg" title="Anexar comprovante">
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-                                        📎
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Converse ou mande um gasto... ✨" 
-                                        className="flex-1 bg-slate-100 border-none rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/50 text-slate-800 font-medium"
-                                        value={input}
-                                        onChange={e => setInput(e.target.value)}
-                                    />
-                                    <button type="submit" disabled={loading} className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-3 py-2 rounded-xl transition disabled:opacity-50 text-sm">
-                                        &rarr;
-                                    </button>
-                                </form>
-                            </div>
-                        )}
-                    </div>
-                );
-            };
+const url =
+$("#m3uUrl")
+.value.trim();
 
-            const MainApp = ({ user, data }) => {
-                const [view, setView] = useState('dashboard');
-                const [localData, setLocalData] = useState(data || DEFAULT_DATA);
-                const [showModal, setShowModal] = useState(false);
-                
-                const [filterType, setFilterType] = useState('all');
-                const [filterCat, setFilterCat] = useState('all');
-                const [searchTerm, setSearchTerm] = useState('');
 
-                const [desc, setDesc] = useState(''); const [amount, setAmount] = useState('');
-                const [type, setType] = useState('expense'); const [cat, setCat] = useState('Casa');
+if(file){
 
-                useEffect(() => { if (data) setLocalData(data); }, [data]);
+text =
+await file.text();
 
-                const saveToCloud = async (newData) => {
-                    setLocalData(newData);
-                    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'finance'), newData, { merge: true });
-                };
+}
 
-                const totalInc = (localData.transactions||[]).filter(t=>t.type==='income').reduce((a,b)=>a+b.amount,0);
-                const totalExp = (localData.transactions||[]).filter(t=>t.type==='expense').reduce((a,b)=>a+b.amount,0);
-                const balance = totalInc - totalExp;
-                
-                const currentMonthPrefix = new Date().toISOString().slice(0, 7);
-                
-                const monthlyExp = (localData.transactions||[])
-                    .filter(t => t.type === 'expense' && t.date.slice(0, 7) === currentMonthPrefix)
-                    .reduce((a,b) => a + b.amount, 0);
+else if(url){
 
-                const monthlyInc = (localData.transactions||[])
-                    .filter(t => t.type === 'income' && t.date.slice(0, 7) === currentMonthPrefix)
-                    .reduce((a,b) => a + b.amount, 0);
+$("#status")
+.textContent =
+"Carregando lista...";
 
-                const monthlyExpectedDebts = (localData.debts||[])
-                    .filter(d => d.installmentsPaid < d.installmentsTotal)
-                    .reduce((a, b) => a + (b.totalValue / b.installmentsTotal || 0), 0);
-                
-                const totalDebtValue = (localData.debts||[]).reduce((a,b)=>a + (b.totalValue || 0), 0);
-                const totalDebtPaid = (localData.debts||[]).reduce((a,b)=>a + (b.installmentsPaid * (b.totalValue/b.installmentsTotal || 0)), 0);
-                const totalDebtsRemaining = Math.max(0, totalDebtValue - totalDebtPaid);
+const response =
+await fetch(url);
 
-                const totalExpectedIncome = (localData.incomeForecasts||[]).reduce((a,b)=>a+b.expectedAmount,0);
-                const projectedBalance = balance + totalExpectedIncome;
+if(!response.ok)
 
-                const daysLeft = useMemo(() => {
-                    if (!localData.subscription?.expiresAt) return 0;
-                    const diff = new Date(localData.subscription.expiresAt) - new Date();
-                    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-                }, [localData.subscription]);
+throw new Error(
+"HTTP " +
+response.status
+);
 
-                const chartData = useMemo(() => {
-                    const m = {};
-                    (localData.transactions||[]).forEach(t => {
-                        const k = t.date.slice(0,10);
-                        if(!m[k]) m[k] = { name: new Date(t.date).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}), saldo: 0 };
-                        if(t.type==='income') m[k].saldo += t.amount; else m[k].saldo -= t.amount;
-                    });
-                    return Object.keys(m).sort().slice(-7).map(k => m[k]);
-                }, [localData.transactions]);
+text =
+await response.text();
 
-                const debtChartData = useMemo(() => {
-                    return (localData.debts||[]).map(d => {
-                        const valParcela = d.totalValue / d.installmentsTotal;
-                        const pago = d.installmentsPaid * valParcela;
-                        const rest = Math.max(0, d.totalValue - pago);
-                        return { name: d.name, Quitado: pago, Restante: rest };
-                    });
-                }, [localData.debts]);
+}
 
-                const handleAddTransaction = async (e) => {
-                    e.preventDefault();
-                    if(!desc || !amount) return;
-                    const newT = { id: Date.now(), desc, amount: parseFloat(amount), type, category: cat, date: new Date().toISOString() };
-                    await saveToCloud({...localData, transactions: [newT, ...(localData.transactions||[])]});
-                    setDesc(''); setAmount(''); setShowModal(false);
-                };
+else{
 
-                const handleConfirmForecastIncome = async (forecast) => {
-                    const newT = { id: Date.now(), desc: `Recebimento: ${forecast.source}`, amount: forecast.expectedAmount, type: 'income', category: 'Salário', date: new Date().toISOString() };
-                    await saveToCloud({...localData, transactions: [newT, ...(localData.transactions||[])]});
-                    alert(`R$ ${forecast.expectedAmount.toFixed(2)} lançados como receita real no seu extrato!`);
-                };
+alert(
+"Selecione um arquivo ou URL."
+);
 
-                const filteredTransactions = (localData.transactions||[]).filter(t => {
-                    const matchesType = filterType === 'all' || t.type === filterType;
-                    const matchesCat = filterCat === 'all' || t.category === filterCat;
-                    const matchesSearch = t.desc.toLowerCase().includes(searchTerm.toLowerCase()) || t.category.toLowerCase().includes(searchTerm.toLowerCase());
-                    return matchesType && matchesCat && matchesSearch;
-                });
+return;
 
-                return (
-                    <div className="flex h-screen bg-slate-50 overflow-hidden">
-                        {/* Sidebar Desktop */}
-                        <aside className="w-64 bg-slate-900 text-slate-400 flex-col hidden md:flex border-r border-slate-800">
-                            <div className="h-20 flex items-center px-6 gap-3"><Icons.Logo /><span className="text-white font-extrabold tracking-tight text-xl">Flux<span className="text-brand-500">Blue</span></span></div>
-                            <div className="px-4 py-2"><div className="bg-slate-800/60 rounded-2xl p-3 border border-slate-700/50 flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div><span className="text-xs font-semibold text-slate-200">Plano Pro</span></div><span className="text-[11px] font-bold bg-slate-700 text-slate-300 px-2 py-0.5 rounded-md">{daysLeft}d</span></div></div>
-                            <nav className="flex-1 px-4 py-4 space-y-1.5">
-                                {[
-                                    {id:'dashboard', label:'Visão Geral', icon:<Icons.Dashboard/>},
-                                    {id:'debts', label:'Otimizador de Dívidas', icon:<Icons.Debts/>, badge:'Especial'},
-                                    {id:'budgets', label:'Metas e Orçamentos', icon:<Icons.Budgets/>},
-                                    {id:'transactions', label:'Lançamentos', icon:<Icons.Transactions/>},
-                                    {id:'goals', label:'Metas', icon:<Icons.Goals/>},
-                                    {id:'profile', label:'Perfil & Conta', icon:<Icons.Profile/>}
-                                ].map(item => (
-                                    <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-2xl transition ${view===item.id ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' : 'hover:bg-slate-800/60 hover:text-slate-200'}`}>
-                                        <div className="flex items-center gap-3">{item.icon}<span>{item.label}</span></div>
-                                        {item.badge && <span className="text-[10px] uppercase tracking-wider font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 py-0.5 rounded-md">{item.badge}</span>}
-                                    </button>
-                                ))}
-                            </nav>
-                            <div className="p-4 border-t border-slate-800/80 flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-brand-500/20 border border-brand-500/30 flex items-center justify-center font-bold text-brand-400 uppercase">{user.email.slice(0,2)}</div>
-                                <div className="flex-1 overflow-hidden"><p className="text-xs font-bold text-slate-200 truncate">{localData.settings?.userName || 'Usuário'}</p><p className="text-[11px] text-slate-500 truncate">{user.email}</p></div>
-                            </div>
-                        </aside>
+}
 
-                        {/* Área Principal */}
-                        <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-                            {/* Header */}
-                            <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-6 z-10 shrink-0">
-                                <div className="flex items-center gap-3">
-                                    <div className="md:hidden text-brand-600"><Icons.Logo className="w-8 h-8" /></div>
-                                    <h2 className="text-lg font-extrabold text-slate-800 capitalize tracking-tight">
-                                        {view === 'dashboard' && 'Visão Geral'}
-                                        {view === 'debts' && 'Plano Sair das Dívidas 🚀'}
-                                        {view === 'budgets' && 'Orçamentos & Previsões'}
-                                        {view === 'transactions' && 'Extrato Completo'}
-                                        {view === 'goals' && 'Metas Financeiras'}
-                                        {view === 'profile' && 'Sua Conta'}
-                                    </h2>
-                                </div>
-                                <button onClick={()=>setShowModal(true)} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition active:scale-95">
-                                    <Icons.Plus className="w-4 h-4 text-brand-400" /><span>Novo Lançamento</span>
-                                </button>
-                            </header>
 
-                            {/* Conteúdo Rolável */}
-                            <div className="flex-1 overflow-y-auto p-4 md:p-8 no-scrollbar pb-28 md:pb-8">
-                                <div className="max-w-5xl mx-auto space-y-6">
+state.items =
+parseM3U(text);
 
-                                    {/* 1. DASHBOARD */}
-                                    {view === 'dashboard' && (
-                                        <>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100 relative overflow-hidden">
-                                                    <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Saldo Total em Conta</span>
-                                                    <p className={`text-2xl font-extrabold tracking-tight ${balance>=0?'text-slate-900':'text-rose-600'}`}>R$ {balance.toFixed(2)}</p>
-                                                    <p className="text-[10px] text-slate-400 mt-1">Lançamentos reais acumulados</p>
-                                                </div>
+state.source =
+"m3u";
 
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100 relative overflow-hidden">
-                                                    <span className="text-xs font-extrabold text-rose-500 uppercase tracking-wider block mb-1">Gasto no Mês Atual</span>
-                                                    <p className="text-2xl font-black tracking-tight text-rose-600">R$ {monthlyExp.toFixed(2)}</p>
-                                                    <p className="text-[10px] text-slate-400 mt-1">Saídas de {new Date().toLocaleDateString('pt-BR', {month: 'long'})}</p>
-                                                </div>
+closeModal(
+"settings"
+);
 
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100 relative overflow-hidden">
-                                                    <span className="text-xs font-extrabold text-amber-500 uppercase tracking-wider block mb-1">Dívidas Previstas no Mês</span>
-                                                    <p className="text-2xl font-black tracking-tight text-amber-600">R$ {monthlyExpectedDebts.toFixed(2)}</p>
-                                                    <p className="text-[10px] text-slate-400 mt-1">Soma das parcelas que vencem agora</p>
-                                                </div>
+$("#status")
+.textContent =
 
-                                                <div className="bg-gradient-to-br from-brand-600 to-indigo-700 p-6 rounded-3xl card-shadow text-white relative overflow-hidden">
-                                                    <span className="text-xs font-bold text-brand-200 uppercase tracking-wider block mb-1">Receita Prevista</span>
-                                                    <p className="text-2xl font-black tracking-tight">R$ {totalExpectedIncome.toFixed(2)}</p>
-                                                    <p className="text-[10px] text-brand-100 mt-1">Salário/rendas a receber</p>
-                                                </div>
-                                            </div>
+state.items.length +
+" itens carregados.";
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex justify-between items-center">
-                                                    <div>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase">Saldo Projetado (Com Previsões)</span>
-                                                        <p className="text-2xl font-black text-emerald-400 mt-1">R$ {projectedBalance.toFixed(2)}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="text-[10px] bg-slate-800 text-slate-300 px-3 py-1 rounded-full border border-slate-700">Se receber tudo</span>
-                                                    </div>
-                                                </div>
+render();
 
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100 flex justify-between items-center">
-                                                    <div>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase">Dívida Total Restante (Longo Prazo)</span>
-                                                        <p className="text-2xl font-black text-rose-600 mt-1">R$ {totalDebtsRemaining.toFixed(2)}</p>
-                                                    </div>
-                                                    <button onClick={()=>setView('debts')} className="text-xs font-bold bg-rose-50 text-rose-600 px-4 py-2 rounded-xl hover:bg-rose-100 transition">Ver Financiamentos &rarr;</button>
-                                                </div>
-                                            </div>
+}
 
-                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100 lg:col-span-2 flex flex-col justify-between">
-                                                    <div>
-                                                        <h3 className="font-extrabold text-slate-800 text-base mb-1">Evolução do Saldo</h3>
-                                                        <p className="text-xs text-slate-400 mb-6">Seu histórico financeiro líquido</p>
-                                                    </div>
-                                                    <div className="h-64 w-full">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <AreaChart data={chartData}>
-                                                                <defs><linearGradient id="colorSaldo" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient></defs>
-                                                                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} />
-                                                                <Tooltip contentStyle={{backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold'}} />
-                                                                <Area type="monotone" dataKey="saldo" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSaldo)" />
-                                                            </AreaChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
+catch(error){
 
-                                                <div className="bg-slate-900 text-white p-6 rounded-3xl card-shadow flex flex-col justify-between relative overflow-hidden">
-                                                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-brand-500/20 rounded-full blur-2xl"></div>
-                                                    <div>
-                                                        <span className="text-[10px] font-extrabold uppercase tracking-widest bg-brand-500/20 text-brand-300 px-2.5 py-1 rounded-lg border border-brand-500/30">Dica Financeira</span>
-                                                        <h3 className="text-xl font-extrabold mt-4 leading-snug">Quer pagar bem menos no financiamento da moto?</h3>
-                                                        <p className="text-slate-400 text-xs mt-2 leading-relaxed">Pagar as parcelas "de trás para frente" (amortizar) arranca os juros do banco. Nosso otimizador de dívidas faz esse cálculo para você economizar mil reais!</p>
-                                                    </div>
-                                                    <button onClick={()=>setView('debts')} className="w-full mt-6 bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-2xl text-xs transition text-center block">
-                                                        Acessar Amortizador 💰
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
+alert(
+"Erro: " +
+error.message +
+"\n\nO servidor pode estar bloqueando CORS."
+);
 
-                                    {/* 2. OTIMIZADOR DE DÍVIDAS COM GRÁFICO E AMORTIZAÇÃO */}
-                                    {view === 'debts' && (
-                                        <div className="space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                <div className="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-                                                    <span className="text-xs font-extrabold text-slate-400 uppercase">Total Financiado</span>
-                                                    <p className="text-2xl font-black text-slate-800 mt-1">R$ {totalDebtValue.toFixed(2)}</p>
-                                                </div>
-                                                <div className="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-                                                    <span className="text-xs font-extrabold text-slate-400 uppercase">Valor Quitado</span>
-                                                    <p className="text-2xl font-black text-emerald-600 mt-1">R$ {totalDebtPaid.toFixed(2)}</p>
-                                                </div>
-                                                <div className="bg-white p-5 rounded-3xl border border-slate-100 card-shadow">
-                                                    <span className="text-xs font-extrabold text-slate-400 uppercase">Saldo Restante</span>
-                                                    <p className="text-2xl font-black text-rose-600 mt-1">R$ {totalDebtsRemaining.toFixed(2)}</p>
-                                                </div>
-                                                <div className="bg-amber-50 p-5 rounded-3xl border border-amber-200 card-shadow">
-                                                    <span className="text-xs font-extrabold text-amber-700 uppercase">Previsto Este Mês</span>
-                                                    <p className="text-2xl font-black text-amber-800 mt-1">R$ {monthlyExpectedDebts.toFixed(2)}</p>
-                                                </div>
-                                            </div>
+}
 
-                                            {debtChartData.length > 0 && (
-                                                <div className="bg-white p-6 rounded-3xl card-shadow border border-slate-100">
-                                                    <h3 className="font-extrabold text-slate-800 text-base mb-1">Gráfico de Quitação das Dívidas</h3>
-                                                    <p className="text-xs text-slate-400 mb-6">Comparativo entre o valor já pago e o que falta quitar</p>
-                                                    <div className="h-60 w-full">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                            <BarChart data={debtChartData} layout="vertical">
-                                                                <XAxis type="number" stroke="#94a3b8" fontSize={12} />
-                                                                <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={12} width={100} />
-                                                                <Tooltip contentStyle={{backgroundColor: '#0f172a', borderRadius: '12px', border: 'none', color: '#fff', fontWeight: 'bold'}} />
-                                                                <Legend />
-                                                                <Bar dataKey="Quitado" fill="#10b981" radius={[0, 4, 4, 0]} stackId="a" />
-                                                                <Bar dataKey="Restante" fill="#f43f5e" radius={[0, 4, 4, 0]} stackId="a" />
-                                                            </BarChart>
-                                                        </ResponsiveContainer>
-                                                    </div>
-                                                </div>
-                                            )}
+}
 
-                                            <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-8 rounded-3xl card-shadow border border-slate-800">
-                                                <span className="bg-rose-500 text-white text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-md tracking-wider">Estratégia de Quitação</span>
-                                                <h2 className="text-2xl sm:text-3xl font-black mt-3">Amortização de Parcelas</h2>
-                                                <p className="text-slate-300 text-xs sm:text-sm mt-2 leading-relaxed">
-                                                    <b>Como pagar menos na parcela "de trás"?</b> Ao antecipar parcelas do final do seu financiamento, o banco é obrigado por lei (Código de Defesa do Consumidor) a descontar 100% dos juros proporcionais ao tempo adiantado. Use o botão <b>Amortizar (Pagar de Trás)</b> abaixo, digite quanto o banco cobrou com desconto e veja seu saldo devedor despencar!
-                                                </p>
-                                            </div>
 
-                                            <div className="flex justify-between items-center bg-white p-6 rounded-3xl card-shadow border border-slate-100">
-                                                <div><h3 className="font-extrabold text-slate-800">Seus Financiamentos & Dívidas</h3><p className="text-xs text-slate-400">Organizados do menor para o maior (Bola de Neve)</p></div>
-                                                <button onClick={()=>{
-                                                    const n = prompt('Nome da Dívida (ex: Financiamento Moto):');
-                                                    const v = parseFloat(prompt('Valor Total Financiado (R$):'));
-                                                    const i = parseInt(prompt('Quantidade total de parcelas:'));
-                                                    if(n && v && i) {
-                                                        const newDebt = { id: Date.now(), name: n, totalValue: v, installmentsTotal: i, installmentsPaid: 0 };
-                                                        saveToCloud({...localData, debts: [...(localData.debts||[]), newDebt]});
-                                                    }
-                                                }} className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition">+ Cadastrar Financiamento</button>
-                                            </div>
+function parseM3U(text){
 
-                                            <div className="grid gap-4">
-                                                {(localData.debts||[])
-                                                    .sort((a,b) => (a.totalValue - a.installmentsPaid*(a.totalValue/a.installmentsTotal)) - (b.totalValue - b.installmentsPaid*(b.totalValue/b.installmentsTotal)))
-                                                    .map((d, index) => {
-                                                        const valParcela = d.totalValue / d.installmentsTotal;
-                                                        const pendente = Math.max(0, d.totalValue - (d.installmentsPaid * valParcela));
-                                                        const quitado = d.installmentsPaid >= d.installmentsTotal;
-                                                        
-                                                        return (
-                                                            <div key={d.id} className={`p-6 rounded-3xl border transition flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${index === 0 && !quitado ? 'bg-indigo-50/50 border-indigo-200 ring-2 ring-indigo-500/20' : 'bg-white border-slate-100 card-shadow'}`}>
-                                                                <div className="space-y-1">
-                                                                    <div className="flex items-center gap-2">
-                                                                        {index === 0 && !quitado && <span className="bg-indigo-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase">Foco Atual 🔥</span>}
-                                                                        <h4 className={`font-extrabold text-base ${quitado ? 'line-through text-slate-400' : 'text-slate-900'}`}>{d.name}</h4>
-                                                                    </div>
-                                                                    <p className="text-xs text-slate-500">Parcelas liquidadas: <b className="text-slate-800">{d.installmentsPaid} de {d.installmentsTotal}</b> • Parcela Nominal: <b>R$ {valParcela.toFixed(2)}</b></p>
-                                                                    <div className="w-48 h-2 bg-slate-200 rounded-full mt-2 overflow-hidden">
-                                                                        <div className="h-full bg-brand-600 rounded-full transition-all" style={{width: `${(d.installmentsPaid/d.installmentsTotal)*100}%`}}></div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex items-center justify-between w-full sm:w-auto gap-6 border-t sm:border-t-0 pt-4 sm:pt-0">
-                                                                    <div className="text-right">
-                                                                        <span className="text-[10px] font-bold text-slate-400 uppercase block">Saldo Devedor Restante</span>
-                                                                        <span className="text-lg font-black text-rose-600">R$ {pendente.toFixed(2)}</span>
-                                                                    </div>
-                                                                    {!quitado ? (
-                                                                        <div className="flex flex-col sm:flex-row gap-2">
-                                                                            <button onClick={()=>{
-                                                                                if(confirm(`Confirmar pagamento da parcela normal (R$ ${valParcela.toFixed(2)})?`)) {
-                                                                                    const newTx = { id: Date.now(), desc: `Parcela ${d.name}`, amount: valParcela, type: 'expense', category: 'Dívidas', date: new Date().toISOString() };
-                                                                                    const updated = (localData.debts||[]).map(x => x.id === d.id ? {...x, installmentsPaid: x.installmentsPaid + 1} : x);
-                                                                                    saveToCloud({...localData, debts: updated, transactions: [newTx, ...(localData.transactions||[])]});
-                                                                                }
-                                                                            }} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-md transition">
-                                                                                Pagar Normal
-                                                                            </button>
-                                                                            <button onClick={()=>{
-                                                                                const realPaid = parseFloat(prompt(`A parcela normal do final do contrato é R$ ${valParcela.toFixed(2)}.\nQual o valor com desconto que você pagou para amortizar (quitar de trás para frente)?`));
-                                                                                if(!isNaN(realPaid) && realPaid > 0) {
-                                                                                    const newTx = { id: Date.now(), desc: `Amortização de Trás: ${d.name}`, amount: realPaid, type: 'expense', category: 'Dívidas', date: new Date().toISOString() };
-                                                                                    const updated = (localData.debts||[]).map(x => x.id === d.id ? {...x, installmentsPaid: x.installmentsPaid + 1} : x);
-                                                                                    saveToCloud({...localData, debts: updated, transactions: [newTx, ...(localData.transactions||[])]});
-                                                                                    alert(`Excelente! Você deu baixa em 1 parcela do final e economizou R$ ${(valParcela - realPaid).toFixed(2)} em juros puros! 🎉`);
-                                                                                }
-                                                                            }} className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-md transition">
-                                                                                Amortizar (De Trás) 💰
-                                                                            </button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <span className="bg-emerald-100 text-emerald-700 font-extrabold text-xs px-3 py-1.5 rounded-xl">Financiamento Quitado! 🎉</span>
-                                                                    )}
-                                                                    <button onClick={()=>{if(confirm('Excluir esta dívida?')) saveToCloud({...localData, debts: localData.debts.filter(x=>x.id!==d.id)})}} className="text-slate-300 hover:text-rose-500 p-2"><Icons.Trash /></button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                {(localData.debts||[]).length === 0 && <div className="text-center py-12 bg-white rounded-3xl border border-slate-100 text-slate-400 text-xs">Nenhum financiamento ativo cadastrado.</div>}
-                                            </div>
-                                        </div>
-                                    )}
+const lines =
+text.split(/\r?\n/);
 
-                                    {/* 3. ORÇAMENTOS E PREVISÕES DE RECEITA */}
-                                    {view === 'budgets' && (
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <div className="bg-white p-6 md:p-8 rounded-3xl card-shadow border border-slate-100 space-y-6">
-                                                <div className="flex justify-between items-center">
-                                                    <div><h3 className="font-extrabold text-slate-900 text-lg">Previsão de Receitas</h3><p className="text-xs text-slate-400">Salários e rendimentos esperados no mês</p></div>
-                                                    <button onClick={()=>{
-                                                        const s = prompt('Nome da Renda (ex: Meu Salário, Renda Extra):');
-                                                        const v = parseFloat(prompt('Valor Esperado (R$):'));
-                                                        if(s && !isNaN(v)) saveToCloud({...localData, incomeForecasts: [...(localData.incomeForecasts||[]), {id: Date.now(), source: s, expectedAmount: v}]});
-                                                    }} className="bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow">+ Previsão</button>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    {(localData.incomeForecasts||[]).map((f) => (
-                                                        <div key={f.id} className="p-4 rounded-2xl bg-brand-50/40 border border-brand-100/50 flex justify-between items-center">
-                                                            <div>
-                                                                <p className="font-extrabold text-sm text-slate-800">{f.source}</p>
-                                                                <p className="text-xs text-brand-600 font-bold">R$ {f.expectedAmount.toFixed(2)}</p>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={()=>handleConfirmForecastIncome(f)} className="bg-brand-600 hover:bg-brand-700 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg shadow-sm transition">Confirmar Recebimento</button>
-                                                                <button onClick={()=>saveToCloud({...localData, incomeForecasts: localData.incomeForecasts.filter(x=>x.id!==f.id)})} className="text-slate-400 hover:text-rose-500 p-1"><Icons.Trash /></button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {(localData.incomeForecasts||[]).length === 0 && <p className="text-center py-6 text-slate-400 text-xs">Nenhuma previsão de receita cadastrada.</p>}
-                                                </div>
-                                            </div>
+const result = [];
 
-                                            <div className="bg-white p-6 md:p-8 rounded-3xl card-shadow border border-slate-100 space-y-6">
-                                                <div className="flex justify-between items-center">
-                                                    <div><h3 className="font-extrabold text-slate-900 text-lg">Teto de Gastos (Tópicos)</h3><p className="text-xs text-slate-400">Limites de despesa por categoria</p></div>
-                                                    <button onClick={()=>{
-                                                        const c = prompt('Categoria (ex: Mercado, Lazer):');
-                                                        const l = parseFloat(prompt('Limite (R$):'));
-                                                        if(c && !isNaN(l)) saveToCloud({...localData, budgets: [...(localData.budgets||[]), {category: c, limit: l}]});
-                                                    }} className="bg-brand-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow">+ Novo Teto</button>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    {(localData.budgets||[]).map((b, i) => {
-                                                        const gasto = (localData.transactions||[]).filter(t => t.type === 'expense' && t.category === b.category).reduce((acc, curr) => acc + curr.amount, 0);
-                                                        const perc = Math.min((gasto / b.limit) * 100, 100);
-                                                        const estourou = gasto > b.limit;
-                                                        return (
-                                                            <div key={i} className="space-y-2">
-                                                                <div className="flex justify-between items-center text-xs"><span className="font-bold text-slate-700">{b.category}</span><span className={`font-bold ${estourou ? 'text-rose-600':'text-slate-500'}`}>R$ {gasto.toFixed(2)} de {b.limit.toFixed(2)}</span></div>
-                                                                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                                                    <div className={`h-full rounded-full ${estourou ? 'bg-rose-500' : perc > 80 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{width: `${perc}%`}}></div>
-                                                                </div>
-                                                                <div className="flex justify-between text-[10px] text-slate-400">
-                                                                    <span>{estourou ? '⚠️ Limite Ultrapassado' : `${(100-perc).toFixed(0)}% restante`}</span>
-                                                                    <button onClick={()=>saveToCloud({...localData, budgets: localData.budgets.filter(x=>x.category!==b.category)})} className="hover:text-rose-600 font-bold">Remover</button>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+let current = null;
 
-                                    {/* 4. EXTRATO DE LANÇAMENTOS COM FILTROS */}
-                                    {view === 'transactions' && (
-                                        <div className="bg-white p-6 md:p-8 rounded-3xl card-shadow border border-slate-100 space-y-6">
-                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                                <div><h3 className="font-extrabold text-slate-900 text-lg">Histórico de Lançamentos</h3><span className="text-xs font-bold text-slate-400">Exibindo: {filteredTransactions.length} transações</span></div>
-                                                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Buscar lançamento..." 
-                                                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none focus:border-brand-600 flex-1 sm:w-40"
-                                                        value={searchTerm}
-                                                        onChange={e=>setSearchTerm(e.target.value)}
-                                                    />
-                                                    <select className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none" value={filterType} onChange={e=>setFilterType(e.target.value)}>
-                                                        <option value="all">Todos os Tipos</option>
-                                                        <option value="income">Receitas (+)</option>
-                                                        <option value="expense">Despesas (-)</option>
-                                                    </select>
-                                                    <select className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none" value={filterCat} onChange={e=>setFilterCat(e.target.value)}>
-                                                        <option value="all">Todas Categorias</option>
-                                                        {(localData.customCategories||[]).map(c=><option key={c} value={c}>{c}</option>)}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div className="divide-y divide-slate-100">
-                                                {filteredTransactions.map(t => (
-                                                    <div key={t.id} className="py-4 flex items-center justify-between group">
-                                                        <div className="flex items-center gap-3.5">
-                                                            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{t.type === 'income' ? '+' : '-'}</div>
-                                                            <div><p className="font-bold text-sm text-slate-800">{t.desc}</p><p className="text-xs text-slate-400">{new Date(t.date).toLocaleDateString('pt-BR')} • {t.category}</p></div>
-                                                        </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <span className={`font-extrabold text-sm ${t.type === 'income' ? 'text-emerald-600' : 'text-slate-800'}`}>{t.type === 'expense' ? '- ' : '+ '}R$ {t.amount.toFixed(2)}</span>
-                                                            <button onClick={()=>{if(confirm('Excluir transação?')) saveToCloud({...localData, transactions: localData.transactions.filter(x=>x.id!==t.id)})}} className="text-slate-300 hover:text-rose-500 p-1"><Icons.Trash /></button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {filteredTransactions.length === 0 && <p className="text-center py-12 text-slate-400 text-xs">Nenhum lançamento encontrado para estes filtros.</p>}
-                                            </div>
-                                        </div>
-                                    )}
 
-                                    {/* 5. METAS */}
-                                    {view === 'goals' && (
-                                        <div className="bg-white p-6 md:p-8 rounded-3xl card-shadow border border-slate-100 space-y-6">
-                                            <div className="flex justify-between items-center"><div><h3 className="font-extrabold text-slate-900 text-lg">Metas de Economia</h3><p className="text-xs text-slate-400">Guarde dinheiro para seus sonhos</p></div><button onClick={()=>{const t=prompt('Qual o objetivo (ex: Viagem)?'); const v=parseFloat(prompt('Valor alvo (R$):')); if(t&&v) saveToCloud({...localData, goals:[...(localData.goals||[]), {id:Date.now(), title:t, target:v, saved:0}]})}} className="bg-brand-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md">+ Criar Meta</button></div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                {(localData.goals||[]).map(g => {
-                                                    const perc = Math.min((g.saved / g.target) * 100, 100);
-                                                    return (
-                                                        <div key={g.id} className="p-6 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-4">
-                                                            <div className="flex justify-between items-start"><div><h4 className="font-extrabold text-slate-900">{g.title}</h4><p className="text-xs font-semibold text-brand-600 mt-0.5">R$ {g.saved.toFixed(2)} <span className="text-slate-400 font-normal">de R$ {g.target.toFixed(2)}</span></p></div><span className="text-xs font-black text-slate-700 bg-white px-2 py-1 rounded-lg border border-slate-200/60">{perc.toFixed(0)}%</span></div>
-                                                            <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden"><div className="h-full bg-brand-600 rounded-full" style={{width: `${perc}%`}}></div></div>
-                                                            <div className="flex justify-between items-center pt-2 border-t border-slate-200/50"><button onClick={()=>{const val=parseFloat(prompt('Valor para guardar agora (R$):')); if(!isNaN(val) && val>0) saveToCloud({...localData, goals: localData.goals.map(x=>x.id===g.id?{...x, saved:x.saved+val}:x)})}} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">+ Guardar Dinheiro</button><button onClick={()=>saveToCloud({...localData, goals: localData.goals.filter(x=>x.id!==g.id)})} className="text-slate-400 hover:text-rose-500"><Icons.Trash /></button></div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
+for(
+const raw of lines
+){
 
-                                    {/* 6. PERFIL */}
-                                    {view === 'profile' && (
-                                        <div className="bg-white p-6 md:p-8 rounded-3xl card-shadow border border-slate-100 max-w-md mx-auto space-y-6 text-center">
-                                            <div className="w-16 h-16 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center text-xl font-black mx-auto uppercase">{user.email.slice(0,2)}</div>
-                                            <div><h3 className="font-extrabold text-slate-900 text-lg">{localData.settings?.userName || 'Usuário FluxBlue'}</h3><p className="text-xs text-slate-400 mt-1">{user.email}</p></div>
-                                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-2"><label className="block text-[11px] font-bold text-slate-400 uppercase">Alterar Nome de Exibição</label><input className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-semibold" value={localData.settings?.userName || ''} onChange={e=>saveToCloud({...localData, settings: {...localData.settings, userName: e.target.value}})} placeholder="Seu nome" /></div>
-                                            <button onClick={()=>signOut(auth)} className="w-full bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold py-3 rounded-xl text-xs transition">Sair da Conta</button>
-                                        </div>
-                                    )}
+const line =
+raw.trim();
 
-                                </div>
-                            </div>
 
-                            {/* ASSISTENTE IA NO CANTO DA TELA COM DADOS REAIS */}
-                            <AIChatAssistant 
-                                localData={localData} 
-                                saveToCloud={saveToCloud} 
-                                balance={balance}
-                                monthlyExp={monthlyExp}
-                                monthlyInc={monthlyInc}
-                                totalDebtsRemaining={totalDebtsRemaining}
-                            />
+if(
+line.startsWith(
+"#EXTINF:"
+)
+){
 
-                            {/* Modal Novo Lançamento */}
-                            {showModal && (
-                                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
-                                    <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 card-shadow space-y-5">
-                                        <div className="flex justify-between items-center"><h3 className="font-extrabold text-slate-900 text-lg">Registrar Lançamento</h3><button onClick={()=>setShowModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">✕</button></div>
-                                        <form onSubmit={handleAddTransaction} className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
-                                                <button type="button" onClick={()=>setType('expense')} className={`py-2 rounded-xl font-bold text-xs transition ${type==='expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'}`}>Despesa</button>
-                                                <button type="button" onClick={()=>setType('income')} className={`py-2 rounded-xl font-bold text-xs transition ${type==='income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>Receita</button>
-                                            </div>
-                                            <div><label className="block text-[11px] font-extrabold text-slate-400 uppercase mb-1">Descrição</label><input required type="text" placeholder="Ex: Compras no Supermercado" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-brand-600" value={desc} onChange={e=>setDesc(e.target.value)} /></div>
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div><label className="block text-[11px] font-extrabold text-slate-400 uppercase mb-1">Valor (R$)</label><input required type="number" step="0.01" placeholder="0,00" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-brand-600" value={amount} onChange={e=>setAmount(e.target.value)} /></div>
-                                                <div><label className="block text-[11px] font-extrabold text-slate-400 uppercase mb-1">Categoria</label><select className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium outline-none focus:border-brand-600" value={cat} onChange={e=>setCat(e.target.value)}>{(localData.customCategories||[]).map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-                                            </div>
-                                            <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25 transition text-xs mt-2">Salvar no Extrato</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            )}
+const attrs = {};
 
-                            {/* Navegação Mobile */}
-                            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-slate-200/60 flex items-center justify-around h-20 px-2 z-40">
-                                {[
-                                    {id:'dashboard', label:'Início', icon:<Icons.Dashboard/>},
-                                    {id:'debts', label:'Dívidas', icon:<Icons.Debts/>},
-                                    {id:'budgets', label:'Metas', icon:<Icons.Budgets/>},
-                                    {id:'transactions', label:'Extrato', icon:<Icons.Transactions/>},
-                                    {id:'profile', label:'Perfil', icon:<Icons.Profile/>}
-                                ].map(item => (
-                                    <button key={item.id} onClick={()=>setView(item.id)} className={`flex-1 flex flex-col items-center justify-center gap-1 py-1 transition ${view===item.id ? 'text-brand-600 font-bold scale-105' : 'text-slate-400 font-medium'}`}>
-                                        {item.icon}<span className="text-[10px] tracking-tight">{item.label}</span>
-                                    </button>
-                                ))}
-                            </nav>
-                        </main>
-                    </div>
-                );
-            };
+for(
+const match of
+line.matchAll(
+/([\w-]+)="([^"]*)"/g
+)
+)
 
-            const Root = () => {
-                const [user, setUser] = useState(null); const [userData, setUserData] = useState(null); const [loading, setLoading] = useState(true);
-                useEffect(() => {
-                    return onAuthStateChanged(auth, async (u) => {
-                        if (u) {
-                            setUser(u);
-                            onSnapshot(doc(db, 'artifacts', appId, 'users', u.uid, 'data', 'finance'), (s) => {
-                                if (s.exists()) setUserData(s.data());
-                                setLoading(false);
-                            });
-                        } else { setUser(null); setLoading(false); }
-                    });
-                }, []);
-                
-                if (loading) return <div className="h-screen flex items-center justify-center"><div className="loader"></div></div>;
-                if (!user) return <AuthScreen />;
-                
-                const isExpired = userData?.subscription?.active === false || (userData?.subscription?.expiresAt && new Date() > new Date(userData.subscription.expiresAt));
-                if (isExpired && user.email !== "salatielvitorino45@gmail.com") return <Paywall user={user} />;
-                
-                return <MainApp user={user} data={userData} />;
-            };
-            ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
-        }
-        if (window.FirebaseSDK) startApp(); else window.addEventListener('firebase-ready', startApp);
-    </script>
+attrs[
+match[1]
+] =
+match[2];
+
+
+const name =
+
+line.includes(",")
+
+?
+
+line.substring(
+line.lastIndexOf(",")+1
+).trim()
+
+:
+
+"Sem título";
+
+
+const group =
+
+attrs[
+"group-title"
+]
+
+||
+
+"Outros";
+
+
+const lower =
+
+(
+name +
+" " +
+group
+).toLowerCase();
+
+
+let kind =
+"live";
+
+
+if(
+/filme|movie|vod|cinema/.test(
+lower
+)
+)
+
+kind =
+"vod";
+
+
+if(
+/serie|série|series|temporada|season/.test(
+lower
+)
+)
+
+kind =
+"series";
+
+
+current = {
+
+name,
+
+category:group,
+
+logo:
+attrs["tvg-logo"]
+|| "",
+
+kind,
+
+url:""
+
+};
+
+}
+
+else if(
+current &&
+line &&
+!line.startsWith("#")
+){
+
+current.url =
+line;
+
+result.push(
+current
+);
+
+current =
+null;
+
+}
+
+}
+
+
+return result;
+
+}
+
+
+/* XTREAM */
+
+async function connectXtream(event){
+
+event.preventDefault();
+
+state.creds = {
+
+server:
+$("#server")
+.value.trim(),
+
+username:
+$("#username")
+.value.trim(),
+
+password:
+$("#password")
+.value
+
+};
+
+
+$("#status")
+.textContent =
+"Conectando...";
+
+
+try{
+
+const auth =
+await json(
+xtreamURL()
+);
+
+
+if(
+String(
+auth?.user_info?.auth
+)
+!== "1"
+)
+
+throw new Error(
+"Login recusado."
+);
+
+
+state.source =
+"xtream";
+
+state.catalog = {
+live:null,
+vod:null,
+series:null
+};
+
+
+closeModal(
+"settings"
+);
+
+
+$("#status")
+.textContent =
+"Conectado.";
+
+
+render();
+
+}
+
+catch(error){
+
+alert(
+"Erro ao conectar.\n\n" +
+error.message +
+"\n\nSe funciona em outro app, o servidor pode estar bloqueando o navegador."
+);
+
+}
+
+}
+
+
+async function loadXtream(kind){
+
+if(
+state.catalog[kind]
+)
+
+return state.catalog[kind];
+
+
+const actions = {
+
+live:[
+"get_live_categories",
+"get_live_streams"
+],
+
+vod:[
+"get_vod_categories",
+"get_vod_streams"
+],
+
+series:[
+"get_series_categories",
+"get_series"
+]
+
+};
+
+
+const [
+categoryAction,
+itemAction
+] =
+actions[kind];
+
+
+const [
+categories,
+items
+] =
+await Promise.all([
+
+json(
+xtreamURL(
+categoryAction
+)
+),
+
+json(
+xtreamURL(
+itemAction
+)
+)
+
+]);
+
+
+const names =
+new Map();
+
+
+for(
+const category of categories
+|| []
+){
+
+names.set(
+String(
+category.category_id
+),
+category.category_name
+);
+
+}
+
+
+const normalized =
+
+(items || [])
+.map(item => ({
+
+...item,
+
+kind,
+
+category:
+
+names.get(
+String(
+item.category_id
+)
+)
+
+||
+
+"Outros"
+
+}));
+
+
+state.catalog[kind] =
+normalized;
+
+
+return normalized;
+
+}
+
+
+async function allItems(){
+
+if(
+state.source ===
+"m3u"
+)
+
+return state.items;
+
+
+if(
+state.source ===
+"xtream"
+){
+
+const [
+live,
+vod,
+series
+] =
+await Promise.all([
+
+loadXtream("live"),
+
+loadXtream("vod"),
+
+loadXtream("series")
+
+]);
+
+
+return [
+...live,
+...vod,
+...series
+];
+
+}
+
+
+return [];
+
+}
+
+
+/* IDENTIFICADOR */
+
+function key(item){
+
+if(
+item.__episode
+)
+
+return item.__episode;
+
+
+if(
+item.kind ===
+"live"
+)
+
+return "live:" +
+item.stream_id;
+
+
+if(
+item.kind ===
+"vod"
+)
+
+return "vod:" +
+item.stream_id;
+
+
+if(
+item.kind ===
+"series"
+)
+
+return "series:" +
+item.series_id;
+
+
+return "m3u:" +
+btoa(
+encodeURIComponent(
+item.url || item.name
+)
+)
+.slice(0,50);
+
+}
+
+
+/* PROGRESSO */
+
+function progress(item){
+
+return database.progress[
+key(item)
+];
+
+}
+
+
+function percentage(item){
+
+const p =
+progress(item);
+
+if(
+!p ||
+!p.duration
+)
+
+return 0;
+
+
+return Math.min(
+100,
+p.time /
+p.duration *
+100
+);
+
+}
+
+
+/* MINHA LISTA */
+
+function isListed(item){
+
+return !!database.mylist[
+key(item)
+];
+
+}
+
+
+function toggleList(item){
+
+const k =
+key(item);
+
+
+if(
+database.mylist[k]
+)
+
+delete database.mylist[k];
+
+else
+
+database.mylist[k] =
+cleanItem(item);
+
+
+save();
+
+render();
+
+openDetails(item);
+
+}
+
+
+function cleanItem(item){
+
+return {
+
+name:
+item.name,
+
+title:
+item.title,
+
+kind:
+item.kind,
+
+category:
+item.category,
+
+logo:
+item.logo,
+
+stream_icon:
+item.stream_icon,
+
+cover:
+item.cover,
+
+stream_id:
+item.stream_id,
+
+series_id:
+item.series_id,
+
+container_extension:
+item.container_extension,
+
+url:
+item.url
+
+};
+
+}
+
+
+/* RENDER */
+
+async function render(){
+
+const content =
+$("#content");
+
+content.innerHTML = "";
+
+
+if(
+!state.source
+){
+
+content.innerHTML =
+"<p style='color:#777'>Conecte uma fonte.</p>";
+
+return;
+
+}
+
+
+try{
+
+let items =
+await allItems();
+
+
+const query =
+
+$("#search")
+.value
+.toLowerCase()
+.trim();
+
+
+if(query){
+
+items =
+items.filter(
+item =>
+
+String(
+item.name ||
+item.title ||
+""
+)
+.toLowerCase()
+.includes(query)
+);
+
+renderRow(
+"Resultados",
+items
+);
+
+return;
+
+}
+
+
+chooseHero(items);
+
+
+if(
+state.view ===
+"mylist"
+){
+
+renderGrouped(
+Object.values(
+database.mylist
+)
+);
+
+return;
+
+}
+
+
+if(
+state.view !==
+"home"
+){
+
+items =
+items.filter(
+item =>
+item.kind ===
+state.view
+);
+
+renderGrouped(
+items
+);
+
+return;
+
+}
+
+
+/* CONTINUAR */
+
+const watching =
+
+Object.values(
+database.progress
+)
+
+.filter(
+p =>
+p.item &&
+p.time > 20 &&
+p.duration &&
+p.time /
+p.duration <
+.95
+)
+
+.sort(
+(a,b)=>
+b.updated -
+a.updated
+)
+
+.map(
+p => p.item
+);
+
+
+if(
+watching.length
+)
+
+renderRow(
+"Continuar assistindo",
+watching
+);
+
+
+/* MINHA LISTA */
+
+const mylist =
+
+Object.values(
+database.mylist
+);
+
+
+if(
+mylist.length
+)
+
+renderRow(
+"Minha Lista",
+mylist
+);
+
+
+/* PRINCIPAIS */
+
+const live =
+items.filter(
+x => x.kind === "live"
+);
+
+const movies =
+items.filter(
+x => x.kind === "vod"
+);
+
+const series =
+items.filter(
+x => x.kind === "series"
+);
+
+
+if(live.length)
+renderRow(
+"Ao vivo",
+live.slice(0,30)
+);
+
+if(movies.length)
+renderRow(
+"Filmes",
+movies.slice(0,30)
+);
+
+if(series.length)
+renderRow(
+"Séries",
+series.slice(0,30)
+);
+
+
+/* CATEGORIAS */
+
+const groups =
+new Map();
+
+
+for(
+const item of items
+){
+
+const group =
+item.category ||
+"Outros";
+
+
+if(
+!groups.has(group)
+)
+
+groups.set(
+group,
+[]
+);
+
+
+if(
+groups.get(group)
+.length < 30
+)
+
+groups.get(group)
+.push(item);
+
+}
+
+
+let count = 0;
+
+for(
+const [
+name,
+groupItems
+] of groups
+){
+
+if(
+count++ > 8
+)
+
+break;
+
+
+renderRow(
+name,
+groupItems
+);
+
+}
+
+}
+
+catch(error){
+
+$("#status")
+.textContent =
+"Erro: " +
+error.message;
+
+}
+
+}
+
+
+function renderGrouped(items){
+
+const groups =
+new Map();
+
+
+for(
+const item of items
+){
+
+const group =
+item.category ||
+"Outros";
+
+
+if(
+!groups.has(group)
+)
+
+groups.set(
+group,
+[]
+);
+
+
+groups
+.get(group)
+.push(item);
+
+}
+
+
+for(
+const [
+name,
+items
+] of groups
+)
+
+renderRow(
+name,
+items
+);
+
+}
+
+
+function renderRow(
+title,
+items
+){
+
+if(
+!items.length
+)
+
+return;
+
+
+const section =
+document.createElement(
+"section"
+);
+
+
+section.className =
+"row";
+
+
+section.innerHTML =
+
+"<h2>" +
+escapeHTML(title) +
+"</h2>" +
+
+"<div class='cards'></div>";
+
+
+const cards =
+section.querySelector(
+".cards"
+);
+
+
+for(
+const item of
+items.slice(0,100)
+)
+
+cards.appendChild(
+card(item)
+);
+
+
+$("#content")
+.appendChild(
+section
+);
+
+}
+
+
+function card(item){
+
+const button =
+document.createElement(
+"button"
+);
+
+
+button.className =
+"card";
+
+
+const title =
+item.name ||
+item.title ||
+"Sem título";
+
+
+const image =
+
+item.stream_icon ||
+
+item.cover ||
+
+item.logo ||
+
+"";
+
+
+const pct =
+percentage(item);
+
+
+button.innerHTML =
+
+image
+
+?
+
+"<img src='" +
+escapeHTML(image) +
+"' alt=''>"
+
+:
+
+"<div class='fallback'>" +
+escapeHTML(title) +
+"</div>";
+
+
+button.innerHTML +=
+
+"<div class='cardInfo'>" +
+
+"<div class='cardTitle'>" +
+escapeHTML(title) +
+"</div>" +
+
+"</div>";
+
+
+if(
+pct > 0
+){
+
+button.innerHTML +=
+
+"<div class='progress'>" +
+
+"<span style='width:" +
+pct +
+"%'></span>" +
+
+"</div>";
+
+}
+
+
+if(
+isListed(item)
+){
+
+button.innerHTML +=
+
+"<div class='listMark'>✓</div>";
+
+}
+
+
+button.onclick =
+() =>
+openDetails(item);
+
+
+return button;
+
+}
+
+
+/* HERO */
+
+function chooseHero(items){
+
+state.hero =
+
+Object.values(
+database.progress
+)
+.filter(
+p => p.item
+)
+.sort(
+(a,b)=>
+b.updated -
+a.updated
+)[0]?.item
+
+||
+
+items.find(
+x =>
+x.kind !==
+"live"
+)
+
+||
+
+items[0];
+
+
+if(
+!state.hero
+)
+
+return;
+
+
+const item =
+state.hero;
+
+
+$("#heroTitle")
+.textContent =
+
+item.name ||
+item.title ||
+"Seu catálogo";
+
+
+$("#heroDescription")
+.textContent =
+
+item.plot ||
+
+item.category ||
+
+"Continue assistindo de onde parou.";
+
+
+const image =
+
+item.cover ||
+
+item.stream_icon ||
+
+item.logo ||
+
+"";
+
+
+$("#heroImage")
+.style.backgroundImage =
+
+image
+
+?
+
+"url('" +
+image.replace(/'/g,"%27") +
+"')"
+
+:
+
+"";
+
+}
+
+
+function heroPlay(){
+
+if(
+state.hero
+)
+
+playSmart(
+state.hero
+);
+
+}
+
+
+function heroDetails(){
+
+if(
+state.hero
+)
+
+openDetails(
+state.hero
+);
+
+}
+
+
+/* DETALHES */
+
+async function openDetails(item){
+
+state.detail =
+item;
+
+
+$("#detailTitle")
+.textContent =
+
+item.name ||
+item.title ||
+"Sem título";
+
+
+$("#detailDescription")
+.textContent =
+
+item.plot ||
+
+item.category ||
+
+"";
+
+
+const image =
+
+item.cover ||
+
+item.stream_icon ||
+
+item.logo ||
+
+"";
+
+
+$("#detailImage")
+.style.backgroundImage =
+
+image
+
+?
+
+"url('" +
+image.replace(/'/g,"%27") +
+"')"
+
+:
+
+"linear-gradient(135deg,#333,#111)";
+
+
+$("#listButton")
+.textContent =
+
+isListed(item)
+
+?
+
+"✓ Na Minha Lista"
+
+:
+
+"＋ Minha Lista";
+
+
+$("#listButton")
+.onclick =
+() =>
+toggleList(item);
+
+
+$("#detailPlay")
+.onclick =
+() =>
+playSmart(item);
+
+
+$("#episodeArea")
+.innerHTML = "";
+
+
+$("#details")
+.classList.remove(
+"hidden"
+);
+
+
+if(
+item.kind ===
+"series" &&
+state.source ===
+"xtream"
+){
+
+try{
+
+const info =
+await json(
+
+xtreamURL(
+"get_series_info"
+)
+
++
+
+"&series_id=" +
+
+encodeURIComponent(
+item.series_id
+)
+
+);
+
+
+state.seriesInfo =
+info;
+
+
+renderEpisodes(
+item,
+info
+);
+
+}
+
+catch(e){}
+
+}
+
+}
+
+
+function renderEpisodes(
+series,
+info
+){
+
+const episodes =
+info.episodes ||
+{};
+
+
+for(
+const season of
+Object.keys(episodes)
+.sort(
+(a,b)=>
+Number(a)-Number(b)
+)
+){
+
+const h =
+document.createElement(
+"h3"
+);
+
+h.textContent =
+"Temporada " +
+season;
+
+
+$("#episodeArea")
+.appendChild(h);
+
+
+for(
+const ep of
+episodes[season]
+){
+
+const row =
+document.createElement(
+"div"
+);
+
+
+row.className =
+"episode";
+
+
+row.innerHTML =
+
+"<div>" +
+
+"<b>" +
+
+escapeHTML(
+ep.title ||
+"Ep. " +
+ep.episode_num
+) +
+
+"</b>" +
+
+"<br>" +
+
+"<small style='color:#999'>" +
+
+"T" +
+season +
+" E" +
+ep.episode_num +
+
+"</small>" +
+
+"</div>" +
+
+"<button>▶</button>";
+
+
+row.querySelector(
+"button"
+)
+.onclick =
+() =>
+playEpisode(
+series,
+season,
+ep
+);
+
+
+$("#episodeArea")
+.appendChild(
+row
+);
+
+}
+
+}
+
+}
+
+
+/* PLAYER */
+
+async function playSmart(item){
+
+if(
+item.kind ===
+"series" &&
+state.source ===
+"xtream"
+){
+
+try{
+
+const info =
+state.seriesInfo
+
+||
+
+await json(
+
+xtreamURL(
+"get_series_info"
+)
+
++
+
+"&series_id=" +
+
+item.series_id
+
+);
+
+
+const seasons =
+
+Object.keys(
+info.episodes ||
+{}
+)
+.sort(
+(a,b)=>
+Number(a)-Number(b)
+);
+
+
+for(
+const season of seasons
+){
+
+for(
+const ep of
+info.episodes[season]
+){
+
+const episode =
+episodeItem(
+item,
+season,
+ep
+);
+
+
+const p =
+progress(
+episode
+);
+
+
+if(
+p &&
+p.time > 20 &&
+p.time /
+p.duration <
+.95
+){
+
+playEpisode(
+item,
+season,
+ep
+);
+
+return;
+
+}
+
+}
+
+}
+
+
+if(
+seasons.length
+){
+
+const first =
+info.episodes[
+seasons[0]
+][0];
+
+
+playEpisode(
+item,
+seasons[0],
+first
+);
+
+return;
+
+}
+
+}
+
+catch(e){}
+
+}
+
+
+playItem(item);
+
+}
+
+
+function episodeItem(
+series,
+season,
+ep
+){
+
+return {
+
+name:
+
+(series.name ||
+series.title)
+
++
+
+" - " +
+
+(
+ep.title ||
+"Ep. " +
+ep.episode_num
+),
+
+kind:"vod",
+
+stream_id:
+ep.id,
+
+container_extension:
+ep.container_extension ||
+"mp4",
+
+cover:
+series.cover ||
+series.stream_icon,
+
+__episode:
+
+"episode:" +
+
+series.series_id +
+
+":" +
+
+season +
+
+":" +
+
+ep.id
+
+};
+
+}
+
+
+function playEpisode(
+series,
+season,
+ep
+){
+
+const item =
+episodeItem(
+series,
+season,
+ep
+);
+
+
+const base =
+cleanServer(
+state.creds.server
+);
+
+
+const url =
+
+base +
+
+"/series/" +
+
+encodeURIComponent(
+state.creds.username
+) +
+
+"/" +
+
+encodeURIComponent(
+state.creds.password
+) +
+
+"/" +
+
+ep.id +
+
+"." +
+
+(
+ep.container_extension ||
+"mp4"
+);
+
+
+startVideo(
+item,
+url
+);
+
+}
+
+
+function playItem(item){
+
+let url =
+item.url;
+
+
+if(
+state.source ===
+"xtream"
+){
+
+const base =
+cleanServer(
+state.creds.server
+);
+
+
+const user =
+encodeURIComponent(
+state.creds.username
+);
+
+
+const pass =
+encodeURIComponent(
+state.creds.password
+);
+
+
+if(
+item.kind ===
+"live"
+)
+
+url =
+
+base +
+"/live/" +
+user +
+"/" +
+pass +
+"/" +
+item.stream_id +
+".m3u8";
+
+
+else
+
+url =
+
+base +
+"/movie/" +
+user +
+"/" +
+pass +
+"/" +
+item.stream_id +
+"." +
+(
+item.container_extension ||
+"mp4"
+);
+
+}
+
+
+startVideo(
+item,
+url
+);
+
+}
+
+
+function startVideo(
+item,
+url
+){
+
+state.playing =
+item;
+
+
+const video =
+$("#video");
+
+
+video.pause();
+
+video.removeAttribute(
+"src"
+);
+
+
+video.src =
+url;
+
+
+$("#playerModal")
+.classList.remove(
+"hidden"
+);
+
+
+const p =
+progress(item);
+
+
+video.onloadedmetadata =
+() => {
+
+if(
+p &&
+p.time > 20 &&
+p.time <
+video.duration - 5
+)
+
+video.currentTime =
+p.time;
+
+
+video.play()
+.catch(()=>{});
+
+};
+
+}
+
+
+$("#video")
+.addEventListener(
+"timeupdate",
+() => {
+
+const video =
+$("#video");
+
+
+if(
+!state.playing ||
+!video.duration ||
+!isFinite(
+video.duration
+)
+)
+
+return;
+
+
+if(
+state.playing.kind ===
+"live" &&
+!state.playing.__episode
+)
+
+return;
+
+
+database.progress[
+key(
+state.playing
+)
+] = {
+
+time:
+video.currentTime,
+
+duration:
+video.duration,
+
+updated:
+Date.now(),
+
+item:
+cleanItem(
+state.playing
+)
+
+};
+
+
+if(
+state.playing.__episode
+)
+
+database.progress[
+key(
+state.playing
+)
+].item.__episode =
+state.playing.__episode;
+
+
+save();
+
+}
+);
+
+
+function closePlayer(){
+
+const video =
+$("#video");
+
+
+video.pause();
+
+video.removeAttribute(
+"src"
+);
+
+video.load();
+
+
+$("#playerModal")
+.classList.add(
+"hidden"
+);
+
+
+state.playing =
+null;
+
+
+render();
+
+}
+
+
+/* NAVEGAÇÃO */
+
+$$(
+".mobileNav button"
+)
+.forEach(
+button => {
+
+button.onclick =
+() => {
+
+$$(
+".mobileNav button"
+)
+.forEach(
+x =>
+x.classList.remove(
+"active"
+)
+);
+
+
+button.classList.add(
+"active"
+);
+
+
+state.view =
+button.dataset.view;
+
+
+render();
+
+};
+
+}
+);
+
+
+$("#search")
+.addEventListener(
+"input",
+render
+);
+
+
+/* ESCAPE */
+
+function escapeHTML(value){
+
+return String(
+value ?? ""
+)
+.replace(
+/[&<>"']/g,
+char => ({
+
+"&":"&amp;",
+
+"<":"&lt;",
+
+">":"&gt;",
+
+'"':"&quot;",
+
+"'":"&#39;"
+
+})[char]
+);
+
+}
+
+
+render();
+
+</script>
+
 </body>
 </html>
