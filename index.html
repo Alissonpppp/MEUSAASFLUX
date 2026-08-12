@@ -169,14 +169,14 @@ main{position:relative;z-index:4;margin-top:-26px;padding:0 12px 95px;width:100%
         <label>ou URL M3U<input id="m3uUrl" placeholder="https://.../lista.m3u"></label>
         <button class="danger" type="submit">Carregar lista</button>
       </form>
-      <p class="small muted">A versão tenta o Firebase Proxy primeiro. Se a Function ainda não estiver publicada, tenta acesso direto; servidores HTTP/CORS podem ser bloqueados pelo navegador.</p>
+      <p class="small muted">A versão usa o Cloudflare Worker como proxy para login, catálogo, séries e vídeo. O Firebase continua sendo usado apenas para sincronizar progresso e Minha Lista entre aparelhos.</p>
     </div>
 
     <div id="tabFirebase" class="hidden">
       <div class="panel">
         <h3>Projeto conectado</h3>
         <div class="small">Project ID: <b>bompre-8a7c0</b></div>
-        <div class="small" style="margin-top:5px">Proxy esperado: <code>xtreamProxy</code> em <code>us-central1</code></div>
+        <div class="small" style="margin-top:5px">Proxy ativo: <code>https://aged-butterfly-ec6b.vidasemfreefire.workers.dev</code></div>
       </div>
       <div class="panel">
         <h3>Sincronização entre aparelhos</h3>
@@ -193,9 +193,9 @@ main{position:relative;z-index:4;margin-top:-26px;padding:0 12px 95px;width:100%
         <p class="small muted">Ao entrar com a mesma conta no iPhone e no computador, progresso e Minha Lista são sincronizados pelo Firestore. O provedor E-mail/Senha precisa estar habilitado no Firebase Authentication.</p>
       </div>
       <div class="panel">
-        <h3>Status do proxy</h3>
+        <h3>Status do Cloudflare Worker</h3>
         <div id="proxyState" class="account-status"><span class="dot"></span><span>Ainda não testado.</span></div>
-        <button id="testProxyBtn" class="secondary">Testar Firebase Proxy</button>
+        <button id="testProxyBtn" class="secondary">Testar Cloudflare Worker</button>
       </div>
     </div>
 
@@ -269,12 +269,12 @@ const firebaseConfig = {
 };
 
 /*
-  IMPORTANTE:
-  Esta é a URL padrão esperada para a Cloud Function.
-  O HTML já usa ela automaticamente quando a função "xtreamProxy" estiver publicada.
+  PROXY CLOUDFLARE WORKER
+  O GitHub Pages fala com este Worker por HTTPS.
+  O Firebase abaixo continua sendo usado somente para autenticação/sincronização.
 */
-const FIREBASE_PROXY =
-  "https://us-central1-bompre-8a7c0.cloudfunctions.net/xtreamProxy";
+const PROXY_URL =
+  "https://aged-butterfly-ec6b.vidasemfreefire.workers.dev";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -433,36 +433,44 @@ $("#heroPlay").onclick=()=>state.hero&&smartPlay(state.hero);
 $("#heroInfo").onclick=()=>state.hero&&openDetails(state.hero);
 
 /* =========================
-   PROXY FIREBASE + FALLBACK
+   CLOUDFLARE WORKER + FALLBACK
    ========================= */
-async function proxyCall(payload,timeoutMs=15000){
+async function workerPost(payload,timeoutMs=15000){
   const ctrl=new AbortController();
   const t=setTimeout(()=>ctrl.abort(),timeoutMs);
   try{
-    const r=await fetch(FIREBASE_PROXY,{
+    const r=await fetch(PROXY_URL,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(payload),
       signal:ctrl.signal
     });
+    let data=null;
+    const text=await r.text();
+    try{data=JSON.parse(text)}catch{}
     if(!r.ok){
-      let msg="";
-      try{msg=(await r.json())?.error||""}catch{}
-      throw new Error(msg||`Proxy HTTP ${r.status}`);
+      throw new Error(data?.error||text||`Proxy HTTP ${r.status}`);
     }
-    return await r.json();
-  }finally{clearTimeout(t)}
+    return data!==null?data:text;
+  }finally{
+    clearTimeout(t);
+  }
 }
 async function testProxy(){
   $("#proxyState").innerHTML='<span class="dot"></span><span>Testando...</span>';
   try{
-    const r=await proxyCall({op:"ping"},7000);
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),7000);
+    const r=await fetch(PROXY_URL+"/?ping=1",{cache:"no-store",signal:ctrl.signal});
+    clearTimeout(t);
+    const data=await r.json();
+    if(!r.ok||data?.ok!==true)throw new Error(data?.error||"Resposta inválida");
     state.proxyAvailable=true;
-    $("#proxyState").innerHTML='<span class="dot ok"></span><span>Firebase Proxy online.</span>';
+    $("#proxyState").innerHTML='<span class="dot ok"></span><span>Cloudflare Worker online.</span>';
     return true;
   }catch(e){
     state.proxyAvailable=false;
-    $("#proxyState").innerHTML='<span class="dot bad"></span><span>Function xtreamProxy ainda não está publicada ou não respondeu.</span>';
+    $("#proxyState").innerHTML='<span class="dot bad"></span><span>Worker não respondeu. Confirme se você clicou em Deploy na Cloudflare.</span>';
     return false;
   }
 }
@@ -487,31 +495,43 @@ async function directJSON(action="",extra={}){
   if(!r.ok)throw new Error("HTTP "+r.status);
   return r.json();
 }
+
+/*
+  O Worker que você publicou recebe diretamente:
+  server, username, password, action e series_id.
+*/
 async function xtreamJSON(op,args={}){
   const payload={
-    op,
     server:cleanServer(state.creds.server),
     username:state.creds.username,
-    password:state.creds.password,
-    ...args
+    password:state.creds.password
   };
-  /* Proxy primeiro */
+
+  if(op==="catalog" && args.action){
+    payload.action=args.action;
+  }
+  if(op==="seriesInfo"){
+    payload.action="get_series_info";
+    payload.series_id=args.series_id;
+  }
+
   try{
-    const out=await proxyCall(payload);
+    const out=await workerPost(payload);
     state.proxyAvailable=true;
-    return out.data!==undefined?out.data:out;
-  }catch(proxyError){
+    return out;
+  }catch(workerError){
     state.proxyAvailable=false;
-    /* Fallback direto */
+
+    /* Fallback direto para servidores HTTPS/CORS compatíveis. */
     try{
       if(op==="auth")return await directJSON();
       if(op==="catalog")return await directJSON(args.action||"");
       if(op==="seriesInfo")return await directJSON("get_series_info",{series_id:args.series_id});
-      throw proxyError;
+      throw workerError;
     }catch(directError){
       throw new Error(
-        "Firebase Proxy indisponível e o acesso direto foi bloqueado. "+
-        "Publique a Function xtreamProxy no projeto bompre-8a7c0."
+        "O Cloudflare Worker não conseguiu acessar o servidor e o navegador também bloqueou o acesso direto. "+
+        "Confira se o Worker está com Deploy ativo e teste novamente em ⚙ → Firebase → Testar Cloudflare Worker."
       );
     }
   }
@@ -537,7 +557,7 @@ $("#xtreamForm").addEventListener("submit",async e=>{
       localStorage.setItem(SOURCE_KEY,JSON.stringify({type:"xtream",...state.creds}));
     }
     closeModal("settingsModal");
-    $("#status").innerHTML=`<span class="ok">Conectado</span> · ${escapeHTML(authData.user_info.username||"usuário")} · ${state.proxyAvailable?"via Firebase":"modo direto"}`;
+    $("#status").innerHTML=`<span class="ok">Conectado</span> · ${escapeHTML(authData.user_info.username||"usuário")} · ${state.proxyAvailable?"via Cloudflare":"modo direto"}`;
     setView("home");
   }catch(e2){
     $("#status").innerHTML=`<span class="warn">${escapeHTML(e2.message)}</span>`;
@@ -550,9 +570,16 @@ $("#m3uForm").addEventListener("submit",async e=>{
     const f=$("#m3uFile").files[0],url=$("#m3uUrl").value.trim();
     if(f)text=await f.text();
     else if(url){
-      const r=await fetch(url,{cache:"no-store"});
-      if(!r.ok)throw new Error("HTTP "+r.status);
-      text=await r.text();
+      try{
+        const r=await fetch(url,{cache:"no-store"});
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        text=await r.text();
+      }catch{
+        const proxied=PROXY_URL+"/?stream="+encodeURIComponent(url);
+        const r=await fetch(proxied,{cache:"no-store"});
+        if(!r.ok)throw new Error("HTTP "+r.status);
+        text=await r.text();
+      }
     }else throw new Error("Selecione um arquivo ou informe uma URL.");
     state.items=parseM3U(text);state.source="m3u";
     closeModal("settingsModal");
@@ -830,19 +857,11 @@ function directStreamUrl(item,type="movie"){
 }
 function proxyStreamUrl(item,type){
   /*
-    Se a Function implementar op=stream por GET, esta URL permite que o player use HTTPS.
-    Caso contrário, a reprodução cai no stream direto.
+    O Worker recebe ?stream=URL e também reescreve playlists HLS
+    para que os segmentos .ts/.m3u8 passem por HTTPS.
   */
-  const params=new URLSearchParams({
-    op:"stream",
-    server:cleanServer(state.creds.server),
-    username:state.creds.username,
-    password:state.creds.password,
-    type,
-    id:String(item.stream_id),
-    ext:item.container_extension|| (type==="live"?"m3u8":"mp4")
-  });
-  return FIREBASE_PROXY+"?"+params.toString();
+  const direct=directStreamUrl(item,type);
+  return PROXY_URL+"/?stream="+encodeURIComponent(direct);
 }
 function playItem(item){
   let url=item.url;
