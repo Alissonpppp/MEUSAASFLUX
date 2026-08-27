@@ -1,88 +1,49 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KeyStock</title>
 <style>
-:root{
-  --bg:#090d13;--panel:#111722;--panel2:#171e2b;--line:#283247;--txt:#f5f7fb;--muted:#98a4b9;
-  --pri:#7657ff;--pri2:#5c3fe7;--green:#2ed18a;--red:#ff6074;--yellow:#ffbd4a;--blue:#49aaff;
-  --r:18px;--shadow:0 18px 55px rgba(0,0,0,.30)
-}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:12px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+:root{--bg:#090d13;--p:#111722;--p2:#171e2b;--line:#283247;--txt:#f5f7fb;--muted:#98a4b9;--pri:#7657ff;--pri2:#5b3ee5;--green:#2ed18a;--red:#ff6074;--yellow:#ffbd4a;--blue:#49aaff;--r:18px;--shadow:0 18px 55px rgba(0,0,0,.30)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:none!important}.muted{color:var(--muted)}.small{font-size:12px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 .top{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 20px;background:rgba(9,13,19,.90);backdrop-filter:blur(18px);border-bottom:1px solid rgba(255,255,255,.06)}
 .brand{display:flex;align-items:center;gap:10px;font-weight:950}.logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--pri),#a385ff);display:grid;place-items:center;box-shadow:0 8px 24px rgba(118,87,255,.3)}
 .wrap{width:min(1240px,calc(100% - 28px));margin:auto;padding:26px 0 50px}.userwrap{width:min(780px,calc(100% - 28px));margin:auto;padding:26px 0 50px}.auth{width:min(540px,calc(100% - 28px));margin:auto;padding:7vh 0 40px}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.016));border:1px solid rgba(255,255,255,.075);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
-.auth .card{padding:28px}.hero{font-size:clamp(29px,6vw,44px);margin:14px 0 8px;line-height:1.02}.sub{color:var(--muted);line-height:1.55;margin:0 0 22px}
-.admin-pass-wrap{display:grid;grid-template-columns:1fr auto;gap:8px}
-.key-input-wrap{display:grid;grid-template-columns:1fr auto;gap:8px}
-.key-input-wrap input{min-width:0;pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important}
-.key-error{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,96,116,.3);background:rgba(255,96,116,.08);color:#ffc1ca;font-size:13px;line-height:1.45}
-
-.admin-pass-masked{-webkit-text-security:disc;text-security:disc}
-.admin-pass-masked.reveal{-webkit-text-security:none;text-security:none}
-.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:850;color:#ccd5e3}
-input,select,textarea{width:100%;border:1px solid var(--line);background:#0e141e;color:var(--txt);border-radius:12px;padding:12px 13px;outline:0}textarea{min-height:135px;resize:vertical;line-height:1.45}
-input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(118,87,255,.14)}
-.btn{border:1px solid var(--line);background:var(--panel2);color:var(--txt);padding:10px 14px;border-radius:11px;font-weight:850;transition:.15s}.btn:hover{transform:translateY(-1px)}.btn:disabled{opacity:.42;cursor:not-allowed;transform:none}
-.primary{background:var(--pri);border-color:var(--pri)}.primary:hover{background:var(--pri2)}.danger{background:rgba(255,96,116,.12);border-color:rgba(255,96,116,.35);color:#ff9dab}.success{background:rgba(46,209,138,.12);border-color:rgba(46,209,138,.35);color:#8ef1be}.warning{background:rgba(255,189,74,.12);border-color:rgba(255,189,74,.35);color:#ffda94}.sm{padding:7px 10px;border-radius:9px;font-size:12px}.block{width:100%}.ghost{background:transparent}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;background:var(--panel);padding:6px;border-radius:14px;margin-bottom:18px}.tab{border:0;background:transparent;color:var(--muted);padding:11px;border-radius:10px;font-weight:850}.tab.active{background:var(--panel2);color:var(--txt)}
-.notice{padding:12px 13px;border-radius:12px;border:1px solid rgba(73,170,255,.3);background:rgba(73,170,255,.08);color:#c4e3ff;font-size:13px;line-height:1.5}
-.notice.ok{border-color:rgba(46,209,138,.30);background:rgba(46,209,138,.08);color:#b9f5d7}.notice.warn{border-color:rgba(255,189,74,.3);background:rgba(255,189,74,.08);color:#ffe3a9}.notice.bad{border-color:rgba(255,96,116,.3);background:rgba(255,96,116,.08);color:#ffc1ca}
-.grid{display:grid;gap:16px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.stat .label{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.7px}.stat .value{font-size:30px;font-weight:950;margin-top:6px}
-.nav{display:flex;gap:8px;overflow:auto}.nav button{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:9px 13px;font-weight:850;white-space:nowrap}.nav button.active{background:var(--pri);border-color:var(--pri);color:#fff}
-.section{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:25px 0 12px}.section h2{margin:0;font-size:20px}.section p{margin:5px 0 0;font-size:13px;color:var(--muted)}.toolbar,.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.toolbar input,.toolbar select{width:auto;min-width:150px}
-.tablewrap{overflow:auto;border:1px solid rgba(255,255,255,.07);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:880px}th,td{padding:12px 13px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}th{font-size:11px;color:#aab5c8;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.025)}td{font-size:13px}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.available,.active{background:rgba(46,209,138,.12);color:#89efba}.delivered,.expired{background:rgba(255,96,116,.12);color:#ff9daa}.unused{background:rgba(73,170,255,.12);color:#a6d6ff}.revoked{background:rgba(255,189,74,.12);color:#ffd58a}
-.msg{border:1px solid var(--line);background:#0e141e;border-radius:14px;padding:14px}.msg+.msg{margin-top:10px}.msgtext{white-space:pre-wrap;word-break:break-word;line-height:1.55;margin:10px 0}.msgmeta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
-.keyhero{padding:20px;border-radius:16px;background:linear-gradient(135deg,rgba(118,87,255,.18),rgba(73,170,255,.08));border:1px solid rgba(118,87,255,.25)}.keycode{font-size:20px;font-weight:950;letter-spacing:1px;word-break:break-all}.count{font-size:13px;color:#cbd4e3;margin-top:8px}
-.empty{text-align:center;color:var(--muted);padding:28px 15px}.sep{height:1px;background:rgba(255,255,255,.06);margin:18px 0}
-.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:grid;place-items:center;padding:18px}.modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:#111722;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}.modal h3{margin:0 0 8px}.modal p{font-size:13px;color:var(--muted);line-height:1.5}.modalact{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
-.codebox{white-space:pre-wrap;overflow:auto;max-height:340px;background:#080c12;border:1px solid var(--line);padding:14px;border-radius:12px;font-size:11px;line-height:1.45;color:#dce5f2}
-.toast{position:fixed;right:18px;bottom:18px;z-index:200;max-width:380px;background:#171e2b;border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);opacity:0;transform:translateY(18px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.toast.err{border-color:rgba(255,96,116,.45)}
-.loader{display:grid;place-items:center;min-height:100vh;color:var(--muted)}.spin{width:34px;height:34px;border:3px solid #283247;border-top-color:var(--pri);border-radius:50%;animation:spin .8s linear infinite;margin:auto auto 12px}@keyframes spin{to{transform:rotate(360deg)}}
-.step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}.stepnum{min-width:30px;height:30px;border-radius:10px;background:rgba(118,87,255,.15);display:grid;place-items:center;color:#b8aaff;font-weight:900}.step b{display:block;margin-bottom:4px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.016));border:1px solid rgba(255,255,255,.075);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}.auth .card{padding:28px}.hero{font-size:clamp(29px,6vw,44px);margin:14px 0 8px;line-height:1.02}.sub{color:var(--muted);line-height:1.55;margin:0 0 22px}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:850;color:#ccd5e3}input,select,textarea{width:100%;border:1px solid var(--line);background:#0e141e;color:var(--txt);border-radius:12px;padding:12px 13px;outline:0}textarea{min-height:135px;resize:vertical;line-height:1.45}input:focus,select:focus,textarea:focus{border-color:var(--pri);box-shadow:0 0 0 3px rgba(118,87,255,.14)}
+.keyrow,.passrow{display:grid;grid-template-columns:1fr auto;gap:8px}.masked{-webkit-text-security:disc;text-security:disc}.masked.reveal{-webkit-text-security:none;text-security:none}
+.btn{border:1px solid var(--line);background:var(--p2);color:var(--txt);padding:10px 14px;border-radius:11px;font-weight:850;transition:.15s}.btn:hover{transform:translateY(-1px)}.btn:disabled{opacity:.42;cursor:not-allowed;transform:none}.primary{background:var(--pri);border-color:var(--pri)}.primary:hover{background:var(--pri2)}.danger{background:rgba(255,96,116,.12);border-color:rgba(255,96,116,.35);color:#ff9dab}.success{background:rgba(46,209,138,.12);border-color:rgba(46,209,138,.35);color:#8ef1be}.warning{background:rgba(255,189,74,.12);border-color:rgba(255,189,74,.35);color:#ffda94}.sm{padding:7px 10px;border-radius:9px;font-size:12px}.block{width:100%}.ghost{background:transparent}
+.notice{padding:12px 13px;border-radius:12px;border:1px solid rgba(73,170,255,.3);background:rgba(73,170,255,.08);color:#c4e3ff;font-size:13px;line-height:1.5}.notice.ok{border-color:rgba(46,209,138,.3);background:rgba(46,209,138,.08);color:#b9f5d7}.notice.warn{border-color:rgba(255,189,74,.3);background:rgba(255,189,74,.08);color:#ffe3a9}.notice.bad{border-color:rgba(255,96,116,.3);background:rgba(255,96,116,.08);color:#ffc1ca}
+.errbox{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,96,116,.3);background:rgba(255,96,116,.08);color:#ffc1ca;font-size:13px;line-height:1.45}
+.grid{display:grid;gap:16px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.stat .label{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase;letter-spacing:.7px}.stat .value{font-size:30px;font-weight:950;margin-top:6px}
+.nav{display:flex;gap:8px;overflow:auto}.nav button{border:1px solid var(--line);background:var(--p);color:var(--muted);border-radius:999px;padding:9px 13px;font-weight:850;white-space:nowrap}.nav button.active{background:var(--pri);border-color:var(--pri);color:#fff}.section{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:25px 0 12px}.section h2{margin:0;font-size:20px}.section p{margin:5px 0 0;font-size:13px;color:var(--muted)}.toolbar,.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.toolbar input,.toolbar select{width:auto;min-width:150px}
+.tablewrap{overflow:auto;border:1px solid rgba(255,255,255,.07);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:880px}th,td{padding:12px 13px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}th{font-size:11px;color:#aab5c8;text-transform:uppercase;letter-spacing:.6px;background:rgba(255,255,255,.025)}td{font-size:13px}.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.badge:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.available,.active{background:rgba(46,209,138,.12);color:#89efba}.delivered,.expired{background:rgba(255,96,116,.12);color:#ff9daa}.unused{background:rgba(73,170,255,.12);color:#a6d6ff}.revoked{background:rgba(255,189,74,.12);color:#ffd58a}
+.msg{border:1px solid var(--line);background:#0e141e;border-radius:14px;padding:14px}.msg+.msg{margin-top:10px}.msgtext{white-space:pre-wrap;word-break:break-word;line-height:1.55;margin:10px 0}.msgmeta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}.keyhero{padding:20px;border-radius:16px;background:linear-gradient(135deg,rgba(118,87,255,.18),rgba(73,170,255,.08));border:1px solid rgba(118,87,255,.25)}.keycode{font-size:20px;font-weight:950;letter-spacing:1px;word-break:break-all}.count{font-size:13px;color:#cbd4e3;margin-top:8px}.empty{text-align:center;color:var(--muted);padding:28px 15px}.sep{height:1px;background:rgba(255,255,255,.06);margin:18px 0}
+.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;display:grid;place-items:center;padding:18px}.modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:#111722;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}.modal h3{margin:0 0 8px}.modal p{font-size:13px;color:var(--muted);line-height:1.5}.modalact{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}.codebox{white-space:pre-wrap;overflow:auto;max-height:420px;background:#080c12;border:1px solid var(--line);padding:14px;border-radius:12px;font-size:11px;line-height:1.45;color:#dce5f2}
+.toast{position:fixed;right:18px;bottom:18px;z-index:200;max-width:390px;background:#171e2b;border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);opacity:0;transform:translateY(18px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.toast.err{border-color:rgba(255,96,116,.45)}.loader{display:grid;place-items:center;min-height:100vh;color:var(--muted)}.spin{width:34px;height:34px;border:3px solid #283247;border-top-color:var(--pri);border-radius:50%;animation:spin .8s linear infinite;margin:auto auto 12px}@keyframes spin{to{transform:rotate(360deg)}}
 @media(max-width:900px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.g4,.g3,.g2{grid-template-columns:1fr}.wrap,.userwrap{width:calc(100% - 20px)}.auth .card{padding:20px}.toolbar{width:100%}.toolbar input,.toolbar select{width:100%;min-width:0}.top{padding:12px 14px}}
 </style>
 </head>
 <body>
 <div id="app"><div class="loader"><div><div class="spin"></div>Carregando...</div></div></div>
-<div id="modal"></div>
-<div id="toast" class="toast"></div>
+<div id="modal"></div><div id="toast" class="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import {
-  getAuth, signInAnonymously, signInWithEmailAndPassword, signOut,
-  setPersistence, browserLocalPersistence, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
-  writeBatch, runTransaction, query, where, limit, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import {getAuth,signInAnonymously,signInWithEmailAndPassword,signOut,setPersistence,browserLocalPersistence} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,updateDoc,deleteDoc,writeBatch,runTransaction,query,where,limit,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB5I6RG-FicgOThwhl-1LLWySo3JRjK1YI",
-  authDomain: "bompre-8a7c0.firebaseapp.com",
-  databaseURL: "https://bompre-8a7c0-default-rtdb.firebaseio.com",
-  projectId: "bompre-8a7c0",
-  storageBucket: "bompre-8a7c0.firebasestorage.app",
-  messagingSenderId: "390830730249",
-  appId: "1:390830730249:web:106a313c6d2bae02ec5cd8"
+const firebaseConfig={
+  apiKey:"AIzaSyB5I6RG-FicgOThwhl-1LLWySo3JRjK1YI",
+  authDomain:"bompre-8a7c0.firebaseapp.com",
+  projectId:"bompre-8a7c0",
+  storageBucket:"bompre-8a7c0.firebasestorage.app",
+  messagingSenderId:"390830730249",
+  appId:"1:390830730249:web:106a313c6d2bae02ec5cd8"
 };
 
-/*
-  IMPORTANTE:
-  - Este HTML usa CLOUD FIRESTORE, não Realtime Database.
-  - O frontend é público por natureza.
-  - A segurança de verdade está nas FIRESTORE SECURITY RULES abaixo.
-  - Cole essas regras no Firebase Console > Firestore Database > Rules.
-*/
-const FIRESTORE_RULES = `rules_version = '2';
+const FIRESTORE_RULES=`rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -97,14 +58,6 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
-    function userPath() {
-      return /databases/$(database)/documents/users/$(request.auth.uid);
-    }
-
-    function activeKeyHash() {
-      return get(userPath()).data.activeKeyHash;
-    }
-
     function keyPath(keyHash) {
       return /databases/$(database)/documents/keys/$(keyHash);
     }
@@ -113,19 +66,16 @@ service cloud.firestore {
       return /databases/$(database)/documents/claims/$(keyHash);
     }
 
-    function hasActiveKey() {
+    function validClaim(keyHash) {
       return signedIn()
-        && exists(userPath())
-        && get(userPath()).data.activeKeyHash is string
-        && exists(keyPath(activeKeyHash()))
-        && exists(claimPath(activeKeyHash()))
-        && get(claimPath(activeKeyHash())).data.uid == request.auth.uid
-        && get(claimPath(activeKeyHash())).data.keyHash == activeKeyHash()
-        && get(keyPath(activeKeyHash())).data.revoked == false
-        && get(claimPath(activeKeyHash())).data.activatedAt is timestamp
-        && get(claimPath(activeKeyHash())).data.durationDays in [7, 15, 30]
-        && request.time < get(claimPath(activeKeyHash())).data.activatedAt
-            + duration.value(get(claimPath(activeKeyHash())).data.durationDays, 'd');
+        && exists(claimPath(keyHash))
+        && get(claimPath(keyHash)).data.uid == request.auth.uid
+        && get(claimPath(keyHash)).data.activatedAt is timestamp
+        && get(claimPath(keyHash)).data.durationDays in [7, 15, 30]
+        && exists(keyPath(keyHash))
+        && get(keyPath(keyHash)).data.revoked == false
+        && request.time < get(claimPath(keyHash)).data.activatedAt
+            + duration.value(get(claimPath(keyHash)).data.durationDays, 'd');
     }
 
     match /admins/{uid} {
@@ -134,23 +84,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    // Clientes podem ler UMA key pelo hash conhecido, mas não listar keys.
-    // Somente o admin altera/cria/exclui documentos de keys.
     match /keys/{keyHash} {
-      allow get: if isAdmin() || signedIn();
+      allow get: if signedIn();
       allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
-    // O primeiro navegador cria o claim. Como o ID = hash da key,
-    // só pode existir um claim por key.
     match /claims/{keyHash} {
       allow get: if isAdmin()
-        || (
-          signedIn()
-          && resource.data.uid == request.auth.uid
-        );
-
+        || (signedIn() && resource.data.uid == request.auth.uid);
       allow list: if isAdmin();
 
       allow create: if signedIn()
@@ -169,54 +111,22 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /users/{uid} {
-      allow get: if isAdmin() || (signedIn() && request.auth.uid == uid);
-      allow list: if isAdmin();
-
-      // activeKeyHash sozinho não libera nada.
-      // hasActiveKey() também exige um claim pertencente ao mesmo UID.
-      allow create, update: if isAdmin()
+    match /stockMeta/{stockId} {
+      allow get: if isAdmin()
         || (
           signedIn()
-          && request.auth.uid == uid
-          && request.resource.data.keys().hasOnly(['activeKeyHash','updatedAt'])
-          && request.resource.data.activeKeyHash is string
-          && request.resource.data.updatedAt == request.time
-        );
-
-      allow delete: if isAdmin();
-
-      match /deliveries/{stockId} {
-        allow get, list: if isAdmin() || (signedIn() && request.auth.uid == uid);
-
-        allow create: if signedIn()
-          && request.auth.uid == uid
-          && hasActiveKey()
-          && request.resource.data.keys().hasOnly(['stockId','keyHash','deliveredAt'])
-          && request.resource.data.stockId == stockId
-          && request.resource.data.keyHash == activeKeyHash()
-          && request.resource.data.deliveredAt == request.time
-          && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.status == 'delivered'
-          && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToUid == uid
-          && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToKeyHash
-              == activeKeyHash();
-
-        allow update: if false;
-        allow delete: if isAdmin();
-      }
-    }
-
-    match /stockMeta/{stockId} {
-      allow get, list: if isAdmin()
-        || (
-          hasActiveKey()
           && (
             resource.data.status == 'available'
-            || (
-              resource.data.status == 'delivered'
-              && resource.data.deliveredToUid == request.auth.uid
-              && resource.data.deliveredToKeyHash == activeKeyHash()
-            )
+            || resource.data.deliveredToUid == request.auth.uid
+          )
+        );
+
+      allow list: if isAdmin()
+        || (
+          signedIn()
+          && (
+            resource.data.status == 'available'
+            || resource.data.deliveredToUid == request.auth.uid
           )
         );
 
@@ -224,46 +134,47 @@ service cloud.firestore {
 
       allow update: if isAdmin()
         || (
-          hasActiveKey()
+          signedIn()
           && resource.data.status == 'available'
           && request.resource.data.status == 'delivered'
           && request.resource.data.deliveredToUid == request.auth.uid
-          && request.resource.data.deliveredToKeyHash == activeKeyHash()
-          && request.resource.data.deliveredToKeyCode
-              == get(keyPath(activeKeyHash())).data.code
+          && request.resource.data.deliveredToKeyHash is string
+          && validClaim(request.resource.data.deliveredToKeyHash)
           && request.resource.data.deliveredAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly([
-                'status','deliveredToUid','deliveredToKeyHash',
-                'deliveredToKeyCode','deliveredAt'
-              ])
-          && getAfter(
-              /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-            ).data.stockId == stockId
-          && getAfter(
-              /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-            ).data.keyHash == activeKeyHash()
+              .hasOnly(['status','deliveredToUid','deliveredToKeyHash','deliveredAt'])
         );
     }
 
     match /stockContent/{stockId} {
       allow get: if isAdmin()
         || (
-          hasActiveKey()
-          && exists(
-            /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-          )
-          && get(
-            /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-          ).data.keyHash == activeKeyHash()
+          signedIn()
+          && exists(/databases/$(database)/documents/stockMeta/$(stockId))
+          && get(/databases/$(database)/documents/stockMeta/$(stockId)).data.status == 'delivered'
           && get(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToUid
               == request.auth.uid
-          && get(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToKeyHash
-              == activeKeyHash()
+          && validClaim(
+              get(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToKeyHash
+            )
         );
 
       allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /accessLogs/{logId} {
+      allow get, list, delete: if isAdmin();
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid','keyHash','at','type'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keyHash is string
+        && request.resource.data.type == 'login'
+        && request.resource.data.at == request.time
+        && validClaim(request.resource.data.keyHash);
+
+      allow update: if false;
     }
 
     match /{document=**} {
@@ -272,849 +183,250 @@ service cloud.firestore {
   }
 }`;
 
-const RULES_REVISION="CLAIM-V1-NO-KEY-UPDATE";
-const adminApp = initializeApp(firebaseConfig, "adminApp");
-const clientApp = initializeApp(firebaseConfig, "clientApp");
-const adminAuth = getAuth(adminApp);
-const clientAuth = getAuth(clientApp);
-const adminDb = getFirestore(adminApp);
-const clientDb = getFirestore(clientApp);
-
-await setPersistence(adminAuth, browserLocalPersistence).catch(()=>{});
-await setPersistence(clientAuth, browserLocalPersistence).catch(()=>{});
+const adminApp=initializeApp(firebaseConfig,"admin");
+const clientApp=initializeApp(firebaseConfig,"client");
+const adminAuth=getAuth(adminApp),clientAuth=getAuth(clientApp);
+const adminDb=getFirestore(adminApp),clientDb=getFirestore(clientApp);
+await setPersistence(adminAuth,browserLocalPersistence).catch(()=>{});
+await setPersistence(clientAuth,browserLocalPersistence).catch(()=>{});
 
 const appEl=document.getElementById("app"),modalEl=document.getElementById("modal"),toastEl=document.getElementById("toast");
-const CLIENT_KEY_SESSION="keystock_active_code_v4";
-
-let adminTab="dashboard",stockFilter="all",stockSearch="",keyFilter="all",keySearch="",logSearch="";
-let timer=null,toastTimer=null;
+const SESSION_KEY="ks_code_final_v1";
+let adminTab="dashboard",stockFilter="all",stockSearch="",keyFilter="all",keySearch="",logSearch="",timer=null,toastTimer=null;
 
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
 function fmt(v){if(!v)return"—";const d=v?.toDate?v.toDate():new Date(v);return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short"}).format(d)}
-function ms(v){if(!v)return 0;return v?.toMillis?v.toMillis():Number(v)}
-function remaining(x){if(x<=0)return"Expirada";const s=Math.floor(x/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),ss=s%60;return d?`${d}d ${h}h ${m}m`:h?`${h}h ${m}m ${ss}s`:`${m}m ${ss}s`}
-function randomChars(n=15){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>chars[x%chars.length]).join("")}
-function makeKey(){return`KEY-${randomChars(5)}-${randomChars(5)}-${randomChars(5)}`}
+function toms(v){if(!v)return 0;return v?.toMillis?v.toMillis():Number(v)}
+function remain(ms){if(ms<=0)return"Expirada";const s=Math.floor(ms/1000),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),ss=s%60;return d?`${d}d ${h}h ${m}m`:h?`${h}h ${m}m ${ss}s`:`${m}m ${ss}s`}
+function rnd(n){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",a=new Uint32Array(n);crypto.getRandomValues(a);return[...a].map(x=>chars[x%chars.length]).join("")}
+function makeKey(){return`KEY-${rnd(5)}-${rnd(5)}-${rnd(5)}`}
 async function sha256(t){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function load(t="Carregando..."){clearInterval(timer);appEl.innerHTML=`<div class="loader"><div><div class="spin"></div>${esc(t)}</div></div>`}
-function toast(t,bad=false){clearTimeout(toastTimer);toastEl.className=`toast ${bad?"err":""} show`;toastEl.textContent=t;toastTimer=setTimeout(()=>toastEl.className="toast",2700)}
-function top(title,right=""){return`<div class="top"><div class="brand"><div class="logo">K</div><div>${esc(title)}</div></div><div class="actions">${right}</div></div>`}
-function keyStatus(k){if(k.revoked)return"revoked";if(!k.activatedAt)return"unused";return Date.now()>=ms(k.activatedAt)+Number(k.durationDays)*86400000?"expired":"active"}
-function keyLabel(s){return({unused:"Não usada",active:"Ativa",expired:"Expirada",revoked:"Revogada"})[s]||s}
+function toast(t,bad=false){clearTimeout(toastTimer);toastEl.className=`toast ${bad?"err":""} show`;toastEl.textContent=t;toastTimer=setTimeout(()=>toastEl.className="toast",2800)}
+function top(t,r=""){return`<div class="top"><div class="brand"><div class="logo">K</div><div>${esc(t)}</div></div><div class="actions">${r}</div></div>`}
+function keyStatus(k){if(k.revoked)return"revoked";if(!k.activatedAt)return"unused";return Date.now()>=toms(k.activatedAt)+Number(k.durationDays)*86400000?"expired":"active"}
+function klabel(s){return({unused:"Não usada",active:"Ativa",expired:"Expirada",revoked:"Revogada"})[s]||s}
 function errorText(e){
   console.error(e);
-  const c=e?.code||"";
-  if(String(e?.message||"").startsWith("ETAPA "))return e.message;
-  if(c.includes("permission-denied"))return"O Firestore bloqueou esta ação. Digite ksrules na página vazia, copie as Rules CLAIM V1 e publique em Firestore Database → Rules.";
-  if(c.includes("unauthorized-domain"))return"Adicione o domínio do seu GitHub Pages em Authentication > Settings > Authorized domains.";
-  if(c.includes("operation-not-allowed"))return"O login Anonymous está desativado. No Firebase: Authentication → Sign-in method → Anonymous → Enable.";
-  if(c.includes("admin-restricted-operation"))return"O Firebase bloqueou o login anônimo. Ative Anonymous em Authentication → Sign-in method.";
+  const m=String(e?.message||"");
+  const c=String(e?.code||"");
+  if(m.startsWith("ETAPA "))return m;
+  if(c.includes("operation-not-allowed")||c.includes("admin-restricted-operation"))return"Ative Anonymous em Firebase Authentication → Sign-in method.";
+  if(c.includes("unauthorized-domain"))return"Adicione seu domínio do GitHub Pages em Authentication → Settings → Authorized domains.";
   if(c.includes("invalid-credential"))return"Email ou senha do administrador incorretos.";
-  if(c.includes("failed-precondition")&&String(e.message).includes("index"))return"O Firestore pediu um índice. Abra o link mostrado no Console do navegador e crie o índice.";
-  return e?.message?.replace(/^FirebaseError:\s*/,"")||"Ocorreu um erro.";
+  if(c.includes("permission-denied"))return"O Firestore bloqueou a operação. Publique as Rules FINAL V1 digitando ksrules na página.";
+  return m.replace(/^FirebaseError:\s*/,"")||"Ocorreu um erro.";
 }
-function confirmBox(title,text,fn){
-  modalEl.innerHTML=`<div class="modalbg" id="mb"><div class="modal"><h3>${esc(title)}</h3><p>${esc(text)}</p><div class="modalact"><button class="btn" id="cancel">Cancelar</button><button class="btn danger" id="ok">Confirmar</button></div></div></div>`;
-  const close=()=>modalEl.innerHTML="";
-  document.getElementById("cancel").onclick=close;document.getElementById("mb").onclick=e=>e.target.id==="mb"&&close();
-  document.getElementById("ok").onclick=()=>{close();fn()};
-}
-async function copyText(text,msg=true){
-  try{await navigator.clipboard.writeText(text)}catch{const t=document.createElement("textarea");t.value=text;t.style.position="fixed";t.style.opacity=0;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove()}
-  if(msg)toast("Copiado.");
-}
+function confirmBox(title,text,fn){modalEl.innerHTML=`<div class="modalbg" id="mb"><div class="modal" style="max-width:540px"><h3>${esc(title)}</h3><p>${esc(text)}</p><div class="modalact"><button class="btn" id="cancel">Cancelar</button><button class="btn danger" id="confirm">Confirmar</button></div></div></div>`;const close=()=>modalEl.innerHTML="";document.getElementById("cancel").onclick=close;document.getElementById("mb").onclick=e=>e.target.id==="mb"&&close();document.getElementById("confirm").onclick=()=>{close();fn()}}
+async function copyText(t,msg=true){try{await navigator.clipboard.writeText(t)}catch{const x=document.createElement("textarea");x.value=t;x.style.position="fixed";x.style.opacity=0;document.body.appendChild(x);x.select();document.execCommand("copy");x.remove()}if(msg)toast("Copiado.")}
 
 async function ensureAnon(){
   if(clientAuth.currentUser)return clientAuth.currentUser;
-  const cred=await signInAnonymously(clientAuth);
-  return cred.user;
+  try{return(await signInAnonymously(clientAuth)).user}catch(e){throw new Error("ETAPA AUTH: não consegui criar o login anônimo. Ative Anonymous no Firebase Authentication.")}
 }
-
-async function isAdmin(){
+async function checkAdmin(){
   const u=adminAuth.currentUser;if(!u)return false;
-  const s=await getDoc(doc(adminDb,"admins",u.uid));
-  return s.exists()&&s.data().active===true;
+  try{const s=await getDoc(doc(adminDb,"admins",u.uid));return s.exists()&&s.data().active===true}catch{return false}
 }
 
-async function home(){
-  clearInterval(timer);
-  const code=sessionStorage.getItem(CLIENT_KEY_SESSION);
-  if(code){try{return await renderUser(code)}catch(e){sessionStorage.removeItem(CLIENT_KEY_SESSION);toast(errorText(e),true)}}
-  renderLogin();
+function rulesModal(){
+  modalEl.innerHTML=`<div class="modalbg" id="rbg"><div class="modal"><h3>Firestore Rules FINAL V1</h3><p>Copie tudo abaixo, cole em <b>Firestore Database → Rules</b> e clique em <b>Publish</b>.</p><div class="codebox">${esc(FIRESTORE_RULES)}</div><div class="modalact"><button class="btn primary" id="copyRules">Copiar Rules FINAL V1</button><button class="btn" id="closeRules">Fechar</button></div></div></div>`;
+  document.getElementById("copyRules").onclick=()=>copyText(FIRESTORE_RULES);
+  document.getElementById("closeRules").onclick=()=>modalEl.innerHTML="";
+  document.getElementById("rbg").onclick=e=>e.target.id==="rbg"&&(modalEl.innerHTML="");
 }
 
 function renderLogin(){
-  appEl.innerHTML=`<div class="auth"><div class="card">
-    <div class="brand"><div class="logo">K</div><div>KeyStock</div></div>
-    <h1 class="hero">Acesso</h1>
-    <p class="sub">Digite ou cole sua key para acessar suas entregas e solicitar novas contas.</p>
-
-    <div id="keyBox">
-      <div class="field">
-        <label for="keyInput">Key de acesso</label>
-        <div class="key-input-wrap">
-          <input id="keyInput"
-                 class="mono"
-                 type="text"
-                 inputmode="text"
-                 autocomplete="off"
-                 autocapitalize="characters"
-                 spellcheck="false"
-                 aria-label="Key de acesso"
-                 placeholder="KEY-XXXXX-XXXXX-XXXXX">
-          <button class="btn sm" type="button" id="pasteKey">Colar key</button>
-        </div>
-      </div>
-
-      <button class="btn primary block" type="button" id="keyGo">Entrar</button>
-      <div id="keyError" class="key-error hidden"></div>
-
-      <div class="notice" style="margin-top:14px">
-        Na primeira utilização a key começa a contar e fica vinculada a este navegador.
-      </div>
-    </div>
+  appEl.innerHTML=`<div class="auth"><div class="card"><div class="brand"><div class="logo">K</div><div>KeyStock</div></div><h1 class="hero">Acesso</h1><p class="sub">Digite ou cole sua key para acessar suas entregas.</p>
+    <div class="field"><label>Key de acesso</label><div class="keyrow"><input id="keyInput" class="mono" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KEY-XXXXX-XXXXX-XXXXX"><button class="btn sm" id="pasteKey" type="button">Colar</button></div></div>
+    <button class="btn primary block" id="keyGo" type="button">Entrar</button><div id="keyError" class="errbox hidden"></div>
+    <div class="notice" style="margin-top:14px">O prazo começa no primeiro acesso e a key fica vinculada a este navegador.</div>
   </div></div>`;
 
-  const keyInput=document.getElementById("keyInput");
-  const keyError=document.getElementById("keyError");
-  const pasteButton=document.getElementById("pasteKey");
-
-  const showKeyError=msg=>{
-    keyError.textContent=msg;
-    keyError.classList.remove("hidden");
-    keyInput.focus();
-  };
-
-  const clearKeyError=()=>keyError.classList.add("hidden");
-
-  const normalizeKey=()=>{
-    let value=keyInput.value.toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9-]/g,"");
-
-    // Se o cliente colar somente os 15 caracteres, monta KEY-XXXXX-XXXXX-XXXXX.
-    const compact=value.replace(/^KEY-?/,"").replaceAll("-","");
-    if(compact.length===15 && /^[A-Z2-9]{15}$/.test(compact)){
-      value=`KEY-${compact.slice(0,5)}-${compact.slice(5,10)}-${compact.slice(10,15)}`;
-    }
-
-    keyInput.value=value.slice(0,23);
-  };
-
-  // Nenhum detector/atalho global interfere no campo de key.
-  ["keydown","keyup","keypress","input","beforeinput","paste","click","focus"].forEach(evt=>{
-    keyInput.addEventListener(evt,e=>e.stopPropagation());
-  });
-
-  keyInput.addEventListener("input",()=>{
-    normalizeKey();
-    clearKeyError();
-  });
-
-  keyInput.addEventListener("paste",()=>{
-    setTimeout(()=>{
-      normalizeKey();
-      clearKeyError();
-      keyInput.focus();
-    },0);
-  });
-
-  pasteButton.onclick=async()=>{
-    try{
-      const text=await navigator.clipboard.readText();
-      if(!text)return showKeyError("Sua área de transferência está vazia.");
-      keyInput.value=text;
-      normalizeKey();
-      clearKeyError();
-      keyInput.focus();
-      const len=keyInput.value.length;
-      try{keyInput.setSelectionRange(len,len)}catch{}
-    }catch{
-      showKeyError("O navegador não liberou a leitura automática. Cole a key com Ctrl + V.");
-    }
-  };
-
-  const keyLogin=async()=>{
-    clearKeyError();
-    normalizeKey();
-    const code=keyInput.value.trim().toUpperCase();
-
-    if(!/^KEY-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code)){
-      return showKeyError("Formato inválido. Use uma key no formato KEY-XXXXX-XXXXX-XXXXX.");
-    }
-
-    const oldText=document.getElementById("keyGo").textContent;
-    document.getElementById("keyGo").disabled=true;
-    document.getElementById("keyGo").textContent="Validando...";
-
-    try{
-      await loginKey(code);
-      sessionStorage.setItem(CLIENT_KEY_SESSION,code);
-      renderUser(code);
-    }catch(e){
-      sessionStorage.removeItem(CLIENT_KEY_SESSION);
-      document.getElementById("keyGo").disabled=false;
-      document.getElementById("keyGo").textContent=oldText;
-      showKeyError(errorText(e));
-    }
-  };
-
-  document.getElementById("keyGo").onclick=keyLogin;
-
-  keyInput.addEventListener("keydown",e=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      keyLogin();
-    }
-  });
-
-  setTimeout(()=>keyInput.focus(),80);
-}
-function openHiddenAdminLogin(){
-  modalEl.innerHTML=`<div class="modalbg" id="adminModalBg"><div class="modal" style="max-width:520px">
-    <h3>Acesso administrativo</h3>
-    <p>Entre com sua conta de administrador.</p>
-
-    <div class="field">
-      <label for="hiddenAdminEmail">Email</label>
-      <input id="hiddenAdminEmail"
-             type="email"
-             autocomplete="off"
-             autocapitalize="none"
-             spellcheck="false">
-    </div>
-
-    <div class="field">
-      <label for="hiddenAdminPass">Senha</label>
-      <div class="admin-pass-wrap">
-        <input id="hiddenAdminPass"
-               class="admin-pass-masked"
-               type="text"
-               inputmode="text"
-               autocomplete="off"
-               autocapitalize="none"
-               spellcheck="false"
-               aria-label="Senha do administrador">
-        <button class="btn sm" type="button" id="toggleAdminPass">Mostrar</button>
-      </div>
-    </div>
-
-    <button class="btn primary block" type="button" id="hiddenAdminGo">Entrar</button>
-    <div class="modalact"><button class="btn" type="button" id="hiddenAdminClose">Fechar</button></div>
-  </div></div>`;
-
-  const emailInput=document.getElementById("hiddenAdminEmail");
-  const passInput=document.getElementById("hiddenAdminPass");
-  const togglePass=document.getElementById("toggleAdminPass");
-
-  // Garante que nenhum listener global interfira nestes campos.
-  [emailInput,passInput].forEach(el=>{
-    ["keydown","keyup","keypress","input","beforeinput"].forEach(evt=>{
-      el.addEventListener(evt,e=>e.stopPropagation());
-    });
-  });
-
-  // Alterna apenas a exibição. O valor digitado nunca é modificado.
-  togglePass.onclick=()=>{
-    const revealing=passInput.classList.toggle("reveal");
-    togglePass.textContent=revealing?"Ocultar":"Mostrar";
-    passInput.focus();
-    const len=passInput.value.length;
-    try{passInput.setSelectionRange(len,len)}catch{}
-  };
-
-  const close=()=>modalEl.innerHTML="";
-  document.getElementById("hiddenAdminClose").onclick=close;
-  document.getElementById("adminModalBg").onclick=e=>e.target.id==="adminModalBg"&&close();
-
-  const doLogin=async()=>{
-    const email=emailInput.value.trim();
-    const password=passInput.value;
-    if(!email||!password)return toast("Digite email e senha.",true);
-
-    try{
-      load("Entrando no painel...");
-      await signInWithEmailAndPassword(adminAuth,email,password);
-
-      if(!await isAdmin()){
-        const uid=adminAuth.currentUser?.uid||"";
-        await signOut(adminAuth).catch(()=>{});
-        renderLogin();
-        return showAdminUidHelp(uid);
-      }
-
-      modalEl.innerHTML="";
-      renderAdmin();
-    }catch(e){
-      await signOut(adminAuth).catch(()=>{});
-      modalEl.innerHTML="";
-      toast(errorText(e),true);
-      renderLogin();
-    }
-  };
-
-  document.getElementById("hiddenAdminGo").onclick=doLogin;
-
-  emailInput.addEventListener("keydown",e=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      passInput.focus();
-    }
-  });
-
-  passInput.addEventListener("keydown",e=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      doLogin();
-    }
-  });
-
-  setTimeout(()=>emailInput.focus(),80);
-}
-function openHiddenRules(){
-  modalEl.innerHTML=`<div class="modalbg" id="rulesModalBg"><div class="modal">
-    <h3>Firestore Rules CLAIM V1 — sem KEY_BIND</h3>
-    <p>Copie e publique em Firestore Database → Rules.</p>
-    <div class="codebox" id="hiddenRulesBox">${esc(FIRESTORE_RULES)}</div>
-    <div class="modalact"><button class="btn primary" id="hiddenCopyRules">Copiar regras</button><button class="btn" id="hiddenRulesClose">Fechar</button></div>
-  </div></div>`;
-  document.getElementById("hiddenCopyRules").onclick=()=>copyText(FIRESTORE_RULES);
-  document.getElementById("hiddenRulesClose").onclick=()=>modalEl.innerHTML="";
-  document.getElementById("rulesModalBg").onclick=e=>e.target.id==="rulesModalBg"&&(modalEl.innerHTML="");
+  const input=document.getElementById("keyInput"),err=document.getElementById("keyError"),btn=document.getElementById("keyGo");
+  ["keydown","keyup","keypress","input","beforeinput","paste","focus","click"].forEach(evt=>input.addEventListener(evt,e=>e.stopPropagation()));
+  const norm=()=>{let v=input.value.toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9-]/g,"");const compact=v.replace(/^KEY-?/,"").replaceAll("-","");if(compact.length===15&&/^[A-Z2-9]{15}$/.test(compact))v=`KEY-${compact.slice(0,5)}-${compact.slice(5,10)}-${compact.slice(10)}`;input.value=v.slice(0,23)};
+  input.oninput=()=>{norm();err.classList.add("hidden")};
+  document.getElementById("pasteKey").onclick=async()=>{try{input.value=await navigator.clipboard.readText();norm();input.focus()}catch{toast("Cole com Ctrl + V.",true)}};
+  const go=async()=>{norm();const code=input.value.trim();err.classList.add("hidden");if(!/^KEY-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code)){err.textContent="Formato inválido.";err.classList.remove("hidden");return}btn.disabled=true;btn.textContent="Validando...";try{await loginKey(code);sessionStorage.setItem(SESSION_KEY,code);renderUser(code)}catch(e){sessionStorage.removeItem(SESSION_KEY);btn.disabled=false;btn.textContent="Entrar";err.textContent=errorText(e);err.classList.remove("hidden");input.focus()}};
+  btn.onclick=go;input.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}});setTimeout(()=>input.focus(),80);
 }
 
-let hiddenAdminSequence="";
+function openAdmin(){
+  modalEl.innerHTML=`<div class="modalbg" id="abg"><div class="modal" style="max-width:520px"><h3>Acesso administrativo</h3><div class="field"><label>Email</label><input id="ae" type="email" autocomplete="off"></div><div class="field"><label>Senha</label><div class="passrow"><input id="ap" class="masked" type="text" autocomplete="off" spellcheck="false"><button class="btn sm" id="showp" type="button">Mostrar</button></div></div><button class="btn primary block" id="ago">Entrar</button><div id="aerr" class="errbox hidden"></div><div class="modalact"><button class="btn" id="aclose">Fechar</button></div></div></div>`;
+  const email=document.getElementById("ae"),pass=document.getElementById("ap"),err=document.getElementById("aerr");
+  [email,pass].forEach(el=>["keydown","keyup","keypress","input","beforeinput","paste","focus","click"].forEach(evt=>el.addEventListener(evt,e=>e.stopPropagation())));
+  document.getElementById("showp").onclick=()=>{const r=pass.classList.toggle("reveal");document.getElementById("showp").textContent=r?"Ocultar":"Mostrar";pass.focus()};
+  const close=()=>modalEl.innerHTML="";document.getElementById("aclose").onclick=close;document.getElementById("abg").onclick=e=>e.target.id==="abg"&&close();
+  const go=async()=>{err.classList.add("hidden");try{await signInWithEmailAndPassword(adminAuth,email.value.trim(),pass.value);if(!await checkAdmin()){const uid=adminAuth.currentUser?.uid||"";await signOut(adminAuth);err.innerHTML=`Login correto, mas este UID não está liberado como admin:<br><span class="mono">${esc(uid)}</span>`;err.classList.remove("hidden");return}modalEl.innerHTML="";renderAdmin()}catch(e){err.textContent=errorText(e);err.classList.remove("hidden")}};
+  document.getElementById("ago").onclick=go;pass.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();go()}});setTimeout(()=>email.focus(),70);
+}
+
+let secretSeq="";
 document.addEventListener("keydown",e=>{
   const tag=(e.target?.tagName||"").toUpperCase();
-
-  // Não intercepta o teclado enquanto o usuário estiver digitando
-  // nem enquanto o modal administrativo estiver aberto.
-  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||modalEl.innerHTML.trim()){
-    return;
-  }
-
-  if(e.ctrlKey||e.altKey||e.metaKey){
-    hiddenAdminSequence="";
-    return;
-  }
-
-  if(e.key.length===1){
-    hiddenAdminSequence=(hiddenAdminSequence+e.key.toLowerCase()).slice(-7);
-
-    if(hiddenAdminSequence==="ksadmin"){
-      hiddenAdminSequence="";
-      e.preventDefault();
-      openHiddenAdminLogin();
-    }else if(hiddenAdminSequence==="ksrules"){
-      hiddenAdminSequence="";
-      e.preventDefault();
-      openHiddenRules();
-    }
-  }
+  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||modalEl.innerHTML.trim())return;
+  if(e.ctrlKey||e.altKey||e.metaKey){secretSeq="";return}
+  if(e.key.length===1){secretSeq=(secretSeq+e.key.toLowerCase()).slice(-7);if(secretSeq==="ksadmin"){secretSeq="";openAdmin()}else if(secretSeq==="ksrules"){secretSeq="";rulesModal()}}
 });
 
-function showAdminUidHelp(uid){
-  renderLogin();
-  modalEl.innerHTML=`<div class="modalbg"><div class="modal" style="max-width:560px">
-    <h3>Usuário autenticado, mas sem permissão de admin</h3>
-    <p>O UID abaixo ainda não está cadastrado como administrador no Firestore.</p>
-    <div class="codebox mono">${esc(uid)}</div>
-    <div class="modalact"><button class="btn" id="uidCopy">Copiar UID</button><button class="btn" id="uidClose">Fechar</button></div>
-  </div></div>`;
-  document.getElementById("uidCopy").onclick=()=>copyText(uid);
-  document.getElementById("uidClose").onclick=()=>modalEl.innerHTML="";
-}
-
 async function loginKey(code){
-  const user=await ensureAnon();
-  const uid=user.uid;
-  const hash=await sha256(code);
+  const user=await ensureAnon(),uid=user.uid,hash=await sha256(code);
+  const keyRef=doc(clientDb,"keys",hash),claimRef=doc(clientDb,"claims",hash);
 
-  const keyRef=doc(clientDb,"keys",hash);
-  const claimRef=doc(clientDb,"claims",hash);
-  const userRef=doc(clientDb,"users",uid);
-
-  // 1) A key é somente leitura para clientes.
   let keySnap;
-  try{
-    keySnap=await getDoc(keyRef);
-  }catch(e){
-    throw new Error("ETAPA KEY_READ: o Firestore bloqueou a leitura da key. Publique as Rules CLAIM V1.");
-  }
-
-  if(!keySnap.exists())throw new Error("Key inválida. Ela não existe.");
-  const k=keySnap.data();
-
-  if(k.revoked)throw new Error("Esta key foi revogada.");
-  if(![7,15,30].includes(Number(k.durationDays)))throw new Error("Esta key possui um prazo inválido.");
-
-  // 2) Procura o claim. Se for de outro UID, as Rules negam a leitura:
-  // isso significa que a key já pertence a outro navegador.
-  let claimSnap=null;
-  try{
-    claimSnap=await getDoc(claimRef);
-  }catch(e){
-    if(String(e?.code||"").includes("permission-denied")){
-      throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
-    }
-    throw e;
-  }
-
-  // 3) Primeiro acesso: cria um claim único. A KEY NÃO É ALTERADA.
-  if(!claimSnap.exists()){
-    try{
-      await setDoc(claimRef,{
-        keyHash:hash,
-        keyCode:code,
-        uid,
-        activatedAt:serverTimestamp(),
-        durationDays:Number(k.durationDays)
-      });
-    }catch(e){
-      // Se duas pessoas tentarem ao mesmo tempo, apenas uma consegue criar.
-      try{
-        const check=await getDoc(claimRef);
-        if(check.exists()&&check.data().uid===uid){
-          claimSnap=check;
-        }else{
-          throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
-        }
-      }catch(e2){
-        if(String(e2?.message||"").includes("outro navegador"))throw e2;
-        throw new Error("ETAPA CLAIM_CREATE: o Firestore bloqueou a criação do vínculo. Publique as Rules CLAIM V1.");
-      }
-    }
-  }else{
-    if(claimSnap.data().uid!==uid)throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
-  }
-
-  // 4) Lê novamente o claim para obter o timestamp real do servidor.
-  let finalClaim;
-  try{
-    const cs=await getDoc(claimRef);
-    if(!cs.exists())throw new Error("Vínculo não encontrado.");
-    finalClaim=cs.data();
-  }catch(e){
-    throw new Error("ETAPA CLAIM_READ: o vínculo foi criado, mas não pôde ser lido.");
-  }
-
-  const activatedMs=ms(finalClaim.activatedAt);
-  const expiresAt=activatedMs+Number(finalClaim.durationDays)*86400000;
-  if(!activatedMs)throw new Error("A ativação ainda não foi confirmada pelo Firebase. Atualize e tente novamente.");
-  if(Date.now()>=expiresAt)throw new Error("Esta key expirou.");
-
-  // 5) Salva apenas a key ativa do usuário.
-  try{
-    await setDoc(userRef,{
-      activeKeyHash:hash,
-      updatedAt:serverTimestamp()
-    },{merge:true});
-  }catch(e){
-    throw new Error("ETAPA USER_SESSION: o Firestore bloqueou a sessão do usuário. Publique as Rules CLAIM V1.");
-  }
-
-  return{uid,hash,claim:finalClaim,expiresAt};
-}
-async function clientState(code){
-  const user=await ensureAnon();
-  const uid=user.uid;
-  const hash=await sha256(code);
-
-  const keyRef=doc(clientDb,"keys",hash);
-  const claimRef=doc(clientDb,"claims",hash);
-  const userRef=doc(clientDb,"users",uid);
-
-  let keySnap,claimSnap,userSnap;
-  try{
-    [keySnap,claimSnap,userSnap]=await Promise.all([
-      getDoc(keyRef),
-      getDoc(claimRef),
-      getDoc(userRef)
-    ]);
-  }catch(e){
-    if(String(e?.code||"").includes("permission-denied")){
-      throw new Error("Esta key está vinculada a outro navegador ou as Rules CLAIM V1 ainda não foram publicadas.");
-    }
-    throw e;
-  }
-
+  try{keySnap=await getDoc(keyRef)}catch{throw new Error("ETAPA KEY_READ: as Rules FINAL V1 ainda não estão publicadas.")}
   if(!keySnap.exists())throw new Error("Key inválida.");
-  if(!claimSnap.exists())throw new Error("Esta key ainda não foi ativada.");
-
   const k=keySnap.data();
-  const claim=claimSnap.data();
-
-  if(claim.uid!==uid)throw new Error("Esta key está vinculada a outro navegador.");
   if(k.revoked)throw new Error("Esta key foi revogada.");
+  if(![7,15,30].includes(Number(k.durationDays)))throw new Error("Prazo da key inválido.");
 
-  const exp=ms(claim.activatedAt)+Number(claim.durationDays)*86400000;
+  let claim=null;
+  try{
+    await setDoc(claimRef,{keyHash:hash,keyCode:code,uid,activatedAt:serverTimestamp(),durationDays:Number(k.durationDays)});
+  }catch(e){
+    try{
+      const cs=await getDoc(claimRef);
+      if(cs.exists())claim=cs.data();
+    }catch{}
+    if(!claim)throw new Error("Esta key já está vinculada a outro navegador.");
+  }
+
+  if(!claim){
+    try{const cs=await getDoc(claimRef);if(cs.exists())claim=cs.data()}catch{}
+  }
+  if(!claim||claim.uid!==uid)throw new Error("Esta key já está vinculada a outro navegador.");
+
+  const exp=toms(claim.activatedAt)+Number(claim.durationDays)*86400000;
+  if(!toms(claim.activatedAt))throw new Error("Ativação ainda não confirmada. Atualize a página e tente novamente.");
   if(Date.now()>=exp)throw new Error("Esta key expirou.");
 
-  if(!userSnap.exists()||userSnap.data().activeKeyHash!==hash){
-    await setDoc(userRef,{
-      activeKeyHash:hash,
-      updatedAt:serverTimestamp()
-    },{merge:true});
-  }
+  try{
+    const lr=doc(collection(clientDb,"accessLogs"));
+    await setDoc(lr,{uid,keyHash:hash,at:serverTimestamp(),type:"login"});
+  }catch{}
+  return{uid,hash,claim,key:k,expiresAt:exp};
+}
 
-  const delSnap=await getDocs(collection(clientDb,"users",uid,"deliveries"));
-  const metas=delSnap.docs
-    .map(d=>({id:d.id,...d.data()}))
-    .filter(x=>x.keyHash===hash)
-    .sort((a,b)=>ms(b.deliveredAt)-ms(a.deliveredAt));
+async function userState(code){
+  const user=await ensureAnon(),uid=user.uid,hash=await sha256(code);
+  let ks,cs;
+  try{[ks,cs]=await Promise.all([getDoc(doc(clientDb,"keys",hash)),getDoc(doc(clientDb,"claims",hash))])}catch(e){throw new Error("Esta key está vinculada a outro navegador ou as Rules FINAL V1 não foram publicadas.")}
+  if(!ks.exists()||!cs.exists())throw new Error("Key não ativada.");
+  const k=ks.data(),claim=cs.data();
+  if(claim.uid!==uid)throw new Error("Esta key está vinculada a outro navegador.");
+  if(k.revoked)throw new Error("Esta key foi revogada.");
+  const exp=toms(claim.activatedAt)+Number(claim.durationDays)*86400000;
+  if(Date.now()>=exp)throw new Error("Esta key expirou.");
 
+  let deliverySnap;
+  try{deliverySnap=await getDocs(query(collection(clientDb,"stockMeta"),where("deliveredToUid","==",uid),where("deliveredToKeyHash","==",hash)))}catch(e){throw new Error("ETAPA DELIVERIES: publique as Rules FINAL V1.")}
+  const metas=deliverySnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>toms(b.deliveredAt)-toms(a.deliveredAt));
   const deliveries=[];
-  for(const x of metas){
-    try{
-      const cs=await getDoc(doc(clientDb,"stockContent",x.stockId));
-      if(cs.exists()){
-        deliveries.push({
-          stockId:x.stockId,
-          text:cs.data().text||"",
-          deliveredAt:x.deliveredAt
-        });
-      }
-    }catch{}
-  }
+  for(const m of metas){try{const c=await getDoc(doc(clientDb,"stockContent",m.id));if(c.exists())deliveries.push({id:m.id,text:c.data().text||"",deliveredAt:m.deliveredAt})}catch{}}
 
   let av;
-  try{
-    av=await getDocs(
-      query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1))
-    );
-  }catch(e){
-    throw new Error("ETAPA STOCK_QUERY: a key entrou, mas o Firestore bloqueou a consulta do estoque. Publique as Rules CLAIM V1.");
-  }
-
-  return{
-    uid,
-    hash,
-    key:k,
-    claim,
-    expiresAt:exp,
-    deliveries,
-    hasStock:!av.empty
-  };
+  try{av=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1)))}catch(e){throw new Error("ETAPA STOCK_QUERY: publique as Rules FINAL V1.")}
+  return{uid,hash,key:k,claim,expiresAt:exp,deliveries,hasStock:!av.empty};
 }
+
 async function renderUser(code){
   clearInterval(timer);load("Carregando suas entregas...");
-  const st=await clientState(code);
-  appEl.innerHTML=`${top("Área do Cliente",`<button class="btn sm ghost" id="uLogout">Sair</button>`)}
-  <div class="userwrap">
-    <div class="keyhero"><div class="small muted">SUA KEY</div><div class="keycode mono">${esc(code)}</div><div id="countdown" class="count"></div></div>
-
-    <div class="card" style="margin-top:16px">
-      <div class="section" style="margin:0 0 12px"><div><h2>Solicitar conta</h2><p>O conteúdo do estoque só é liberado depois que o item é atribuído à sua key.</p></div></div>
-      <div class="notice ${st.hasStock?"ok":"warn"}">${st.hasStock?"Há estoque disponível.":"Não há estoque disponível no momento."}</div>
-      <button class="btn primary block" style="margin-top:12px" id="request" ${st.hasStock?"":"disabled"}>Solicitar mais uma conta</button>
-    </div>
-
-    <div class="section"><div><h2>Minhas entregas</h2><p>${st.deliveries.length} item(ns) recebido(s) por esta key.</p></div></div>
-    ${st.deliveries.map((x,i)=>`<div class="msg"><div class="msgmeta"><b>Entrega #${st.deliveries.length-i}</b><span class="small muted">${fmt(x.deliveredAt)}</span><button class="btn sm" data-copydelivery="${esc(x.stockId)}">Copiar texto</button></div><div class="msgtext mono">${esc(x.text)}</div></div>`).join("")||`<div class="card empty">Nenhuma conta recebida ainda.</div>`}
-  </div>`;
-
-  document.getElementById("uLogout").onclick=()=>{sessionStorage.removeItem(CLIENT_KEY_SESSION);renderLogin()};
-  document.getElementById("request").onclick=()=>claimStock(code,st.hash);
-
-  document.querySelectorAll("[data-copydelivery]").forEach(b=>b.onclick=()=>{
-    const x=st.deliveries.find(v=>v.stockId===b.dataset.copydelivery);if(x)copyText(x.text);
-  });
-
-  const update=()=>{
-    const e=document.getElementById("countdown");if(!e)return;
-    const left=st.expiresAt-Date.now();e.textContent=`Prazo restante: ${remaining(left)} · Expira em ${fmt(new Date(st.expiresAt))}`;
-    if(left<=0){clearInterval(timer);sessionStorage.removeItem(CLIENT_KEY_SESSION);toast("Sua key expirou.",true);renderLogin()}
-  };
-  update();timer=setInterval(update,1000);
+  let s;try{s=await userState(code)}catch(e){sessionStorage.removeItem(SESSION_KEY);toast(errorText(e),true);return renderLogin()}
+  appEl.innerHTML=`${top("Área do Cliente",`<button class="btn sm ghost" id="uout">Sair</button>`)}<div class="userwrap"><div class="keyhero"><div class="small muted">SUA KEY</div><div class="keycode mono">${esc(code)}</div><div id="count" class="count"></div></div>
+  <div class="card" style="margin-top:16px"><div class="section" style="margin:0 0 12px"><div><h2>Solicitar conta</h2><p>Receba o próximo item disponível.</p></div></div><div class="notice ${s.hasStock?"ok":"warn"}">${s.hasStock?"Há estoque disponível.":"Sem estoque disponível no momento."}</div><button class="btn primary block" style="margin-top:12px" id="request" ${s.hasStock?"":"disabled"}>Solicitar mais uma conta</button></div>
+  <div class="section"><div><h2>Minhas entregas</h2><p>${s.deliveries.length} recebida(s).</p></div></div>${s.deliveries.map((x,i)=>`<div class="msg"><div class="msgmeta"><b>Entrega #${s.deliveries.length-i}</b><span class="small muted">${fmt(x.deliveredAt)}</span><button class="btn sm" data-dcopy="${x.id}">Copiar</button></div><div class="msgtext mono">${esc(x.text)}</div></div>`).join("")||`<div class="card empty">Nenhuma entrega ainda.</div>`}</div>`;
+  document.getElementById("uout").onclick=()=>{sessionStorage.removeItem(SESSION_KEY);renderLogin()};
+  document.getElementById("request").onclick=()=>claimStock(code,s.hash);
+  document.querySelectorAll("[data-dcopy]").forEach(b=>b.onclick=()=>{const x=s.deliveries.find(v=>v.id===b.dataset.dcopy);if(x)copyText(x.text)});
+  const tick=()=>{const e=document.getElementById("count");if(!e)return;const left=s.expiresAt-Date.now();e.textContent=`Prazo restante: ${remain(left)} · Expira em ${fmt(new Date(s.expiresAt))}`;if(left<=0){clearInterval(timer);sessionStorage.removeItem(SESSION_KEY);toast("Sua key expirou.",true);renderLogin()}};tick();timer=setInterval(tick,1000);
 }
 
 async function claimStock(code,keyHash){
   load("Reservando item...");
   const user=await ensureAnon(),uid=user.uid;
-
-  for(let attempt=0;attempt<5;attempt++){
-    try{
-      const qSnap=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(10)));
-      if(qSnap.empty){toast("Sem estoque disponível no momento.",true);return renderUser(code)}
-
-      let claimed=false;
-      for(const candidate of qSnap.docs){
-        try{
-          await runTransaction(clientDb,async tx=>{
-            const metaRef=doc(clientDb,"stockMeta",candidate.id);
-            const deliveryRef=doc(clientDb,"users",uid,"deliveries",candidate.id);
-            const mSnap=await tx.get(metaRef);
-            if(!mSnap.exists()||mSnap.data().status!=="available")throw new Error("ITEM_JA_USADO");
-            tx.update(metaRef,{
-              status:"delivered",deliveredToUid:uid,deliveredToKeyHash:keyHash,
-              deliveredToKeyCode:code,deliveredAt:serverTimestamp()
-            });
-            tx.set(deliveryRef,{stockId:candidate.id,keyHash,deliveredAt:serverTimestamp()});
-          });
-          claimed=true;break;
-        }catch(e){
-          if(String(e?.message||"").includes("ITEM_JA_USADO"))continue;
-          if(String(e?.code||"").includes("aborted"))continue;
-          throw e;
-        }
-      }
-      if(claimed){toast("Conta entregue com sucesso.");return renderUser(code)}
-    }catch(e){
-      if(attempt===4){toast(errorText(e),true);return renderUser(code)}
+  try{
+    const q=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(10)));
+    if(q.empty){toast("Sem estoque disponível.",true);return renderUser(code)}
+    for(const d of q.docs){
+      try{
+        await runTransaction(clientDb,async tx=>{
+          const r=doc(clientDb,"stockMeta",d.id),snap=await tx.get(r);
+          if(!snap.exists()||snap.data().status!=="available")throw new Error("USED");
+          tx.update(r,{status:"delivered",deliveredToUid:uid,deliveredToKeyHash:keyHash,deliveredAt:serverTimestamp()});
+        });
+        toast("Conta entregue.");return renderUser(code);
+      }catch(e){if(String(e?.message||"").includes("USED")||String(e?.code||"").includes("aborted"))continue;throw e}
     }
-  }
-  toast("Não consegui reservar um item agora. Tente novamente.",true);renderUser(code);
+    toast("Outro usuário pegou os itens disponíveis. Tente de novo.",true);renderUser(code);
+  }catch(e){toast(errorText(e),true);renderUser(code)}
 }
 
 async function adminSnapshot(){
-  if(!await isAdmin())throw new Error("Usuário sem permissão administrativa.");
-
-  const [keysSnap,claimsSnap,stockSnap]=await Promise.all([
-    getDocs(collection(adminDb,"keys")),
-    getDocs(collection(adminDb,"claims")),
-    getDocs(collection(adminDb,"stockMeta"))
+  if(!await checkAdmin())throw new Error("Sem permissão administrativa.");
+  const [ks,cs,ms,cts,ls]=await Promise.all([
+    getDocs(collection(adminDb,"keys")),getDocs(collection(adminDb,"claims")),getDocs(collection(adminDb,"stockMeta")),getDocs(collection(adminDb,"stockContent")),getDocs(collection(adminDb,"accessLogs"))
   ]);
-
-  const claimsByHash=new Map(
-    claimsSnap.docs.map(d=>[d.id,{id:d.id,...d.data()}])
-  );
-
-  const keys=keysSnap.docs.map(d=>{
-    const base={hash:d.id,...d.data()};
-    const claim=claimsByHash.get(d.id);
-    return{
-      ...base,
-      activatedAt:claim?.activatedAt||null,
-      boundUid:claim?.uid||null,
-      lastAccessAt:claim?.activatedAt||null,
-      accessCount:claim?1:0
-    };
-  });
-
-  const stock=[];
-  for(const m of stockSnap.docs){
-    let text="";
-    try{
-      const c=await getDoc(doc(adminDb,"stockContent",m.id));
-      if(c.exists())text=c.data().text||"";
-    }catch{}
-    stock.push({id:m.id,...m.data(),text});
-  }
-
-  keys.sort((a,b)=>ms(b.createdAt)-ms(a.createdAt));
-  stock.sort((a,b)=>ms(b.createdAt)-ms(a.createdAt));
-  return{keys,stock};
+  const claims=new Map(cs.docs.map(d=>[d.id,{id:d.id,...d.data()}])),contents=new Map(cts.docs.map(d=>[d.id,d.data()]));
+  const keys=ks.docs.map(d=>{const k={hash:d.id,...d.data()},c=claims.get(d.id);return{...k,activatedAt:c?.activatedAt||null,boundUid:c?.uid||null}});
+  const stock=ms.docs.map(d=>({id:d.id,...d.data(),text:contents.get(d.id)?.text||""}));
+  const logs=ls.docs.map(d=>({id:d.id,...d.data()}));
+  keys.sort((a,b)=>toms(b.createdAt)-toms(a.createdAt));stock.sort((a,b)=>toms(b.createdAt)-toms(a.createdAt));logs.sort((a,b)=>toms(b.at)-toms(a.at));
+  return{keys,stock,logs};
 }
+
 async function renderAdmin(){
   clearInterval(timer);load("Carregando painel...");
-  let s;
-  try{s=await adminSnapshot()}catch(e){toast(errorText(e),true);return renderLogin()}
-
-  const available=s.stock.filter(x=>x.status==="available").length,delivered=s.stock.filter(x=>x.status==="delivered").length;
-  const active=s.keys.filter(x=>keyStatus(x)==="active").length,unused=s.keys.filter(x=>keyStatus(x)==="unused").length;
-
-  appEl.innerHTML=`${top("KeyStock Admin",`<button class="btn sm ghost" id="adminOut">Sair</button>`)}
-  <div class="wrap">
-    <div class="nav">
-      ${[["dashboard","Visão geral"],["stock","Estoque"],["keys","Keys"],["logs","Logs"],["settings","Conta"]].map(([a,b])=>`<button class="${adminTab===a?"active":""}" data-tab="${a}">${b}</button>`).join("")}
-    </div>
-    <div id="adminContent" style="margin-top:18px"></div>
-  </div>`;
-
-  document.getElementById("adminOut").onclick=async()=>{await signOut(adminAuth);renderLogin()};
-  document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});
-  const c=document.getElementById("adminContent");
-
-  if(adminTab==="dashboard"){
-    c.innerHTML=`<div class="grid g4">
-      <div class="card stat"><div class="label">Disponíveis</div><div class="value">${available}</div></div>
-      <div class="card stat"><div class="label">Entregues</div><div class="value">${delivered}</div></div>
-      <div class="card stat"><div class="label">Keys ativas</div><div class="value">${active}</div></div>
-      <div class="card stat"><div class="label">Keys não usadas</div><div class="value">${unused}</div></div>
-    </div>
-    <div class="grid g2" style="margin-top:16px">
-      <div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Atalhos</h2></div></div><div class="actions"><button class="btn primary" id="goStock">Adicionar estoque</button><button class="btn" id="goKeys">Criar keys</button></div></div>
-      <div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Proteção</h2></div></div><div class="notice ok">O texto do estoque fica em documentos separados. Um cliente só consegue ler o conteúdo depois que as regras confirmam que aquele item foi entregue à key ativa dele.</div></div>
-    </div>`;
-    document.getElementById("goStock").onclick=()=>{adminTab="stock";renderAdmin()};document.getElementById("goKeys").onclick=()=>{adminTab="keys";renderAdmin()};
-  }
-  if(adminTab==="stock")adminStock(c,s);
-  if(adminTab==="keys")adminKeys(c,s);
-  if(adminTab==="logs")adminLogs(c,s);
-  if(adminTab==="settings")adminSettings(c,s);
+  let s;try{s=await adminSnapshot()}catch(e){toast(errorText(e),true);return renderLogin()}
+  const av=s.stock.filter(x=>x.status==="available").length,de=s.stock.filter(x=>x.status==="delivered").length,ak=s.keys.filter(x=>keyStatus(x)==="active").length,uk=s.keys.filter(x=>keyStatus(x)==="unused").length;
+  appEl.innerHTML=`${top("KeyStock Admin",`<button class="btn sm ghost" id="aout">Sair</button>`)}<div class="wrap"><div class="nav">${[["dashboard","Visão geral"],["stock","Estoque"],["keys","Keys"],["logs","Logs"],["account","Conta"]].map(([a,b])=>`<button data-tab="${a}" class="${adminTab===a?"active":""}">${b}</button>`).join("")}</div><div id="content" style="margin-top:18px"></div></div>`;
+  document.getElementById("aout").onclick=async()=>{await signOut(adminAuth);renderLogin()};document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{adminTab=b.dataset.tab;renderAdmin()});const c=document.getElementById("content");
+  if(adminTab==="dashboard"){c.innerHTML=`<div class="grid g4"><div class="card stat"><div class="label">Disponíveis</div><div class="value">${av}</div></div><div class="card stat"><div class="label">Entregues</div><div class="value">${de}</div></div><div class="card stat"><div class="label">Keys ativas</div><div class="value">${ak}</div></div><div class="card stat"><div class="label">Keys não usadas</div><div class="value">${uk}</div></div></div><div class="card" style="margin-top:16px"><div class="actions"><button class="btn primary" id="gst">Adicionar estoque</button><button class="btn" id="gk">Criar keys</button></div></div>`;document.getElementById("gst").onclick=()=>{adminTab="stock";renderAdmin()};document.getElementById("gk").onclick=()=>{adminTab="keys";renderAdmin()}}
+  if(adminTab==="stock")adminStock(c,s);if(adminTab==="keys")adminKeys(c,s);if(adminTab==="logs")adminLogs(c,s);if(adminTab==="account")adminAccount(c,s);
 }
 
 function adminStock(c,s){
-  const f=s.stock.filter(x=>{
-    const q=stockSearch.trim().toLowerCase();
-    return(stockFilter==="all"||x.status===stockFilter)&&(!q||x.text.toLowerCase().includes(q)||x.id.toLowerCase().includes(q)||(x.deliveredToKeyCode||"").toLowerCase().includes(q))
-  });
-  c.innerHTML=`<div class="grid g2">
-    <div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Adicionar estoque</h2><p>Separe vários itens por uma linha contendo somente ---</p></div></div>
-      <div class="field"><label>Mensagem / conta</label><textarea id="stockText" placeholder="login: exemplo@email.com&#10;senha: 123456&#10;&#10;---&#10;&#10;login: outro@email.com&#10;senha: abc123"></textarea></div>
-      <button class="btn primary" id="addStock">Adicionar estoque</button>
-    </div>
-    <div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Como é protegido</h2></div></div><div class="notice ok">O usuário consegue consultar apenas metadados dos itens disponíveis. O campo com login/senha fica em <b>stockContent</b> e as regras só liberam a leitura após a entrega.</div></div>
-  </div>
-  <div class="section"><div><h2>Estoque</h2><p>${f.length} item(ns).</p></div><div class="toolbar"><input id="stockSearch" placeholder="Buscar..." value="${esc(stockSearch)}"><select id="stockFilter"><option value="all">Todos</option><option value="available" ${stockFilter==="available"?"selected":""}>Disponíveis</option><option value="delivered" ${stockFilter==="delivered"?"selected":""}>Entregues</option></select></div></div>
-  <div class="tablewrap"><table><thead><tr><th>Status</th><th>Mensagem</th><th>Entregue para</th><th>Criado</th><th>Entregue</th><th>Ações</th></tr></thead><tbody>
-  ${f.map(x=>`<tr><td><span class="badge ${x.status}">${x.status==="available"?"Disponível":"Entregue"}</span></td><td><div style="max-width:360px;white-space:pre-wrap;word-break:break-word">${esc(x.text)}</div></td><td class="mono small">${esc(x.deliveredToKeyCode||"—")}</td><td>${fmt(x.createdAt)}</td><td>${fmt(x.deliveredAt)}</td><td><div class="actions"><button class="btn sm" data-scopy="${x.id}">Copiar</button><button class="btn sm ${x.status==="available"?"warning":"success"}" data-stoggle="${x.id}">${x.status==="available"?"Marcar entregue":"Marcar disponível"}</button><button class="btn sm danger" data-sdelete="${x.id}">Excluir</button></div></td></tr>`).join("")||`<tr><td colspan="6"><div class="empty">Nenhum item.</div></td></tr>`}
-  </tbody></table></div>`;
-
-  document.getElementById("addStock").onclick=async()=>{
-    const raw=document.getElementById("stockText").value.trim();if(!raw)return toast("Digite o estoque.",true);
-    const blocks=raw.split(/\n\s*---\s*\n/g).map(x=>x.trim()).filter(Boolean);
-    if(blocks.length>100)return toast("Adicione no máximo 100 itens por vez.",true);
-    try{
-      const batch=writeBatch(adminDb);
-      for(const text of blocks){
-        const metaRef=doc(collection(adminDb,"stockMeta")),id=metaRef.id;
-        batch.set(metaRef,{status:"available",createdAt:serverTimestamp(),deliveredToUid:null,deliveredToKeyHash:null,deliveredToKeyCode:null,deliveredAt:null});
-        batch.set(doc(adminDb,"stockContent",id),{text});
-      }
-      await batch.commit();toast(`${blocks.length} item(ns) adicionado(s).`);renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  };
-  document.getElementById("stockSearch").onchange=e=>{stockSearch=e.target.value;renderAdmin()};document.getElementById("stockFilter").onchange=e=>{stockFilter=e.target.value;renderAdmin()};
-  document.querySelectorAll("[data-scopy]").forEach(b=>b.onclick=()=>{const x=s.stock.find(v=>v.id===b.dataset.scopy);x&&copyText(x.text)});
-  document.querySelectorAll("[data-stoggle]").forEach(b=>b.onclick=async()=>{
-    const x=s.stock.find(v=>v.id===b.dataset.stoggle);if(!x)return;
-    try{
-      if(x.status==="available")await updateDoc(doc(adminDb,"stockMeta",x.id),{status:"delivered",deliveredToUid:null,deliveredToKeyHash:null,deliveredToKeyCode:"ADMIN-MANUAL",deliveredAt:serverTimestamp()});
-      else await updateDoc(doc(adminDb,"stockMeta",x.id),{status:"available",deliveredToUid:null,deliveredToKeyHash:null,deliveredToKeyCode:null,deliveredAt:null});
-      renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  });
-  document.querySelectorAll("[data-sdelete]").forEach(b=>b.onclick=()=>confirmBox("Excluir item","O item e seu conteúdo serão removidos.",async()=>{
-    const x=s.stock.find(v=>v.id===b.dataset.sdelete);if(!x)return;
-    try{
-      const batch=writeBatch(adminDb);batch.delete(doc(adminDb,"stockMeta",x.id));batch.delete(doc(adminDb,"stockContent",x.id));
-      if(x.deliveredToUid)batch.delete(doc(adminDb,"users",x.deliveredToUid,"deliveries",x.id));
-      await batch.commit();toast("Item excluído.");renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  }));
+  const f=s.stock.filter(x=>{const q=stockSearch.trim().toLowerCase();return(stockFilter==="all"||x.status===stockFilter)&&(!q||x.text.toLowerCase().includes(q)||x.id.toLowerCase().includes(q))});
+  c.innerHTML=`<div class="grid g2"><div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Adicionar estoque</h2><p>Separe vários itens com uma linha contendo apenas ---</p></div></div><div class="field"><label>Mensagem / conta</label><textarea id="stxt"></textarea></div><button class="btn primary" id="sadd">Adicionar</button></div><div class="card"><div class="notice ok">O conteúdo fica separado do status e só é liberado ao UID que recebeu o item.</div></div></div>
+  <div class="section"><div><h2>Estoque</h2><p>${f.length} item(ns).</p></div><div class="toolbar"><input id="ss" placeholder="Buscar..." value="${esc(stockSearch)}"><select id="sf"><option value="all">Todos</option><option value="available" ${stockFilter==="available"?"selected":""}>Disponíveis</option><option value="delivered" ${stockFilter==="delivered"?"selected":""}>Entregues</option></select></div></div>
+  <div class="tablewrap"><table><thead><tr><th>Status</th><th>Mensagem</th><th>Criado</th><th>Entregue</th><th>Ações</th></tr></thead><tbody>${f.map(x=>`<tr><td><span class="badge ${x.status}">${x.status==="available"?"Disponível":"Entregue"}</span></td><td><div style="max-width:380px;white-space:pre-wrap;word-break:break-word">${esc(x.text)}</div></td><td>${fmt(x.createdAt)}</td><td>${fmt(x.deliveredAt)}</td><td><div class="actions"><button class="btn sm" data-scopy="${x.id}">Copiar</button><button class="btn sm ${x.status==="available"?"warning":"success"}" data-stoggle="${x.id}">${x.status==="available"?"Marcar entregue":"Marcar disponível"}</button><button class="btn sm danger" data-sdel="${x.id}">Excluir</button></div></td></tr>`).join("")||`<tr><td colspan="5"><div class="empty">Nenhum item.</div></td></tr>`}</tbody></table></div>`;
+  document.getElementById("sadd").onclick=async()=>{const blocks=document.getElementById("stxt").value.split(/\n\s*---\s*\n/g).map(x=>x.trim()).filter(Boolean);if(!blocks.length)return toast("Digite o estoque.",true);try{const b=writeBatch(adminDb);for(const text of blocks){const m=doc(collection(adminDb,"stockMeta"));b.set(m,{status:"available",createdAt:serverTimestamp(),deliveredToUid:null,deliveredToKeyHash:null,deliveredAt:null});b.set(doc(adminDb,"stockContent",m.id),{text})}await b.commit();toast(`${blocks.length} item(ns) adicionado(s).`);renderAdmin()}catch(e){toast(errorText(e),true)}};
+  document.getElementById("ss").onchange=e=>{stockSearch=e.target.value;renderAdmin()};document.getElementById("sf").onchange=e=>{stockFilter=e.target.value;renderAdmin()};
+  document.querySelectorAll("[data-scopy]").forEach(b=>b.onclick=()=>{const x=s.stock.find(v=>v.id===b.dataset.scopy);if(x)copyText(x.text)});
+  document.querySelectorAll("[data-stoggle]").forEach(b=>b.onclick=async()=>{const x=s.stock.find(v=>v.id===b.dataset.stoggle);try{await updateDoc(doc(adminDb,"stockMeta",x.id),x.status==="available"?{status:"delivered",deliveredToUid:null,deliveredToKeyHash:null,deliveredAt:serverTimestamp()}:{status:"available",deliveredToUid:null,deliveredToKeyHash:null,deliveredAt:null});renderAdmin()}catch(e){toast(errorText(e),true)}});
+  document.querySelectorAll("[data-sdel]").forEach(b=>b.onclick=()=>confirmBox("Excluir item","O item será removido.",async()=>{try{const bt=writeBatch(adminDb);bt.delete(doc(adminDb,"stockMeta",b.dataset.sdel));bt.delete(doc(adminDb,"stockContent",b.dataset.sdel));await bt.commit();renderAdmin()}catch(e){toast(errorText(e),true)}}));
 }
 
 function adminKeys(c,s){
   const f=s.keys.filter(k=>{const st=keyStatus(k),q=keySearch.trim().toLowerCase();return(keyFilter==="all"||st===keyFilter)&&(!q||(k.code||"").toLowerCase().includes(q)||(k.note||"").toLowerCase().includes(q))});
-  c.innerHTML=`<div class="card"><div class="section" style="margin:0 0 14px"><div><h2>Criar keys</h2><p>7, 15 ou 30 dias. O prazo só começa no primeiro acesso. Se uma tentativa antiga prender uma key, use <b>Desvincular navegador</b>.</p></div></div>
-    <div class="grid g3"><div class="field"><label>Duração</label><select id="duration"><option value="7">7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></div><div class="field"><label>Quantidade</label><input id="qty" type="number" min="1" max="100" value="1"></div><div class="field"><label>Observação</label><input id="note" placeholder="Ex.: Cliente João"></div></div>
-    <div class="actions"><button class="btn primary" id="createKeys">Gerar key(s)</button><button class="btn" id="copyUnused">Copiar não usadas</button></div>
-  </div>
-  <div class="section"><div><h2>Keys</h2><p>${f.length} key(s).</p></div><div class="toolbar"><input id="keySearch" placeholder="Buscar..." value="${esc(keySearch)}"><select id="keyFilter"><option value="all">Todas</option><option value="unused" ${keyFilter==="unused"?"selected":""}>Não usadas</option><option value="active" ${keyFilter==="active"?"selected":""}>Ativas</option><option value="expired" ${keyFilter==="expired"?"selected":""}>Expiradas</option><option value="revoked" ${keyFilter==="revoked"?"selected":""}>Revogadas</option></select></div></div>
-  <div class="tablewrap"><table><thead><tr><th>Status</th><th>Key</th><th>Prazo</th><th>Ativada</th><th>Último acesso</th><th>Acessos</th><th>Obs.</th><th>Ações</th></tr></thead><tbody>
-  ${f.map(k=>{const st=keyStatus(k);return`<tr><td><span class="badge ${st}">${keyLabel(st)}</span></td><td class="mono"><b>${esc(k.code||"")}</b></td><td>${k.durationDays} dias</td><td>${fmt(k.activatedAt)}</td><td>${fmt(k.lastAccessAt)}</td><td>${k.accessCount||0}</td><td>${esc(k.note||"—")}</td><td><div class="actions"><button class="btn sm" data-kcopy="${k.hash}">Copiar</button>${k.activatedAt?`<button class="btn sm" data-kreset="${k.hash}">Desvincular navegador</button>`:""}${st!=="expired"?`<button class="btn sm ${k.revoked?"success":"warning"}" data-krevoke="${k.hash}">${k.revoked?"Reativar":"Revogar"}</button>`:""}<button class="btn sm danger" data-kdelete="${k.hash}">Excluir</button></div></td></tr>`}).join("")||`<tr><td colspan="8"><div class="empty">Nenhuma key.</div></td></tr>`}
-  </tbody></table></div>`;
-
-  document.getElementById("createKeys").onclick=async()=>{
-    const days=Number(document.getElementById("duration").value),qty=Math.max(1,Math.min(100,Number(document.getElementById("qty").value)||1)),note=document.getElementById("note").value.trim().slice(0,200);
-    const made=[],batch=writeBatch(adminDb);
-    try{
-      for(let i=0;i<qty;i++){
-        let code=makeKey(),hash=await sha256(code);
-        made.push(code);
-        batch.set(doc(adminDb,"keys",hash),{code,durationDays:days,note,createdAt:serverTimestamp(),revoked:false,revokedAt:null});
-      }
-      await batch.commit();await copyText(made.join("\n"),false);toast(`${qty} key(s) criada(s) e copiadas.`);renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  };
-  document.getElementById("copyUnused").onclick=()=>{const a=s.keys.filter(k=>keyStatus(k)==="unused").map(k=>k.code);a.length?copyText(a.join("\n")):toast("Não há keys não usadas.",true)};
-  document.getElementById("keySearch").onchange=e=>{keySearch=e.target.value;renderAdmin()};document.getElementById("keyFilter").onchange=e=>{keyFilter=e.target.value;renderAdmin()};
-  document.querySelectorAll("[data-kcopy]").forEach(b=>b.onclick=()=>{const k=s.keys.find(x=>x.hash===b.dataset.kcopy);k&&copyText(k.code)});
-  document.querySelectorAll("[data-kreset]").forEach(b=>b.onclick=()=>confirmBox(
-    "Desvincular navegador",
-    "Isso remove somente o vínculo atual desta key. Ela voltará para Não usada e o prazo começará novamente no próximo primeiro acesso.",
-    async()=>{
-      const k=s.keys.find(x=>x.hash===b.dataset.kreset);
-      if(!k)return;
-      try{
-        await deleteDoc(doc(adminDb,"claims",k.hash));
-        toast("Vínculo removido. A key voltou para Não usada.");
-        renderAdmin();
-      }catch(e){
-        toast(errorText(e),true);
-      }
-    }
-  ));
-
-  document.querySelectorAll("[data-krevoke]").forEach(b=>b.onclick=async()=>{
-    const k=s.keys.find(x=>x.hash===b.dataset.krevoke);if(!k)return;
-    const next=!k.revoked;
-    try{
-      if(!next&&keyStatus(k)==="expired")return toast("Key expirada não pode ser reativada.",true);
-      await updateDoc(doc(adminDb,"keys",k.hash),{revoked:next,revokedAt:next?serverTimestamp():null});
-      renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  });
-  document.querySelectorAll("[data-kdelete]").forEach(b=>b.onclick=()=>confirmBox("Excluir key","Ela deixará de funcionar imediatamente.",async()=>{
-    const k=s.keys.find(x=>x.hash===b.dataset.kdelete);if(!k)return;
-    try{
-      const batch=writeBatch(adminDb);
-      batch.delete(doc(adminDb,"keys",k.hash));
-      batch.delete(doc(adminDb,"claims",k.hash));
-      await batch.commit();
-      toast("Key excluída.");renderAdmin();
-    }catch(e){toast(errorText(e),true)}
-  }));
+  c.innerHTML=`<div class="card"><div class="section" style="margin:0 0 12px"><div><h2>Criar keys</h2><p>O prazo começa somente quando o claim é criado no primeiro acesso.</p></div></div><div class="grid g3"><div class="field"><label>Duração</label><select id="kd"><option value="7">7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></div><div class="field"><label>Quantidade</label><input id="kq" type="number" min="1" max="100" value="1"></div><div class="field"><label>Observação</label><input id="kn"></div></div><div class="actions"><button class="btn primary" id="kg">Gerar</button><button class="btn" id="ku">Copiar não usadas</button></div></div>
+  <div class="section"><div><h2>Keys</h2><p>${f.length} key(s).</p></div><div class="toolbar"><input id="ks" placeholder="Buscar..." value="${esc(keySearch)}"><select id="kf"><option value="all">Todas</option><option value="unused" ${keyFilter==="unused"?"selected":""}>Não usadas</option><option value="active" ${keyFilter==="active"?"selected":""}>Ativas</option><option value="expired" ${keyFilter==="expired"?"selected":""}>Expiradas</option><option value="revoked" ${keyFilter==="revoked"?"selected":""}>Revogadas</option></select></div></div>
+  <div class="tablewrap"><table><thead><tr><th>Status</th><th>Key</th><th>Prazo</th><th>Ativada</th><th>Obs.</th><th>Ações</th></tr></thead><tbody>${f.map(k=>{const st=keyStatus(k);return`<tr><td><span class="badge ${st}">${klabel(st)}</span></td><td class="mono"><b>${esc(k.code)}</b></td><td>${k.durationDays} dias</td><td>${fmt(k.activatedAt)}</td><td>${esc(k.note||"—")}</td><td><div class="actions"><button class="btn sm" data-kcopy="${k.hash}">Copiar</button>${k.activatedAt?`<button class="btn sm" data-kreset="${k.hash}">Desvincular</button>`:""}${st!=="expired"?`<button class="btn sm ${k.revoked?"success":"warning"}" data-krev="${k.hash}">${k.revoked?"Reativar":"Revogar"}</button>`:""}<button class="btn sm danger" data-kdel="${k.hash}">Excluir</button></div></td></tr>`}).join("")||`<tr><td colspan="6"><div class="empty">Nenhuma key.</div></td></tr>`}</tbody></table></div>`;
+  document.getElementById("kg").onclick=async()=>{const days=Number(document.getElementById("kd").value),qty=Math.max(1,Math.min(100,Number(document.getElementById("kq").value)||1)),note=document.getElementById("kn").value.trim().slice(0,200),codes=[],b=writeBatch(adminDb);try{for(let i=0;i<qty;i++){const code=makeKey(),hash=await sha256(code);codes.push(code);b.set(doc(adminDb,"keys",hash),{code,durationDays:days,note,createdAt:serverTimestamp(),revoked:false,revokedAt:null})}await b.commit();await copyText(codes.join("\n"),false);toast(`${qty} key(s) criada(s) e copiadas.`);renderAdmin()}catch(e){toast(errorText(e),true)}};
+  document.getElementById("ku").onclick=()=>{const a=s.keys.filter(k=>keyStatus(k)==="unused").map(k=>k.code);a.length?copyText(a.join("\n")):toast("Nenhuma key não usada.",true)};
+  document.getElementById("ks").onchange=e=>{keySearch=e.target.value;renderAdmin()};document.getElementById("kf").onchange=e=>{keyFilter=e.target.value;renderAdmin()};
+  document.querySelectorAll("[data-kcopy]").forEach(b=>b.onclick=()=>{const k=s.keys.find(x=>x.hash===b.dataset.kcopy);if(k)copyText(k.code)});
+  document.querySelectorAll("[data-kreset]").forEach(b=>b.onclick=()=>confirmBox("Desvincular key","Remove apenas o claim. A key volta a ficar não usada.",async()=>{try{await deleteDoc(doc(adminDb,"claims",b.dataset.kreset));toast("Key desvinculada.");renderAdmin()}catch(e){toast(errorText(e),true)}}));
+  document.querySelectorAll("[data-krev]").forEach(b=>b.onclick=async()=>{const k=s.keys.find(x=>x.hash===b.dataset.krev);try{await updateDoc(doc(adminDb,"keys",k.hash),{revoked:!k.revoked,revokedAt:!k.revoked?serverTimestamp():null});renderAdmin()}catch(e){toast(errorText(e),true)}});
+  document.querySelectorAll("[data-kdel]").forEach(b=>b.onclick=()=>confirmBox("Excluir key","A key e o vínculo serão removidos.",async()=>{try{const bt=writeBatch(adminDb);bt.delete(doc(adminDb,"keys",b.dataset.kdel));bt.delete(doc(adminDb,"claims",b.dataset.kdel));await bt.commit();renderAdmin()}catch(e){toast(errorText(e),true)}}));
 }
 
 function adminLogs(c,s){
   const events=[];
-  for(const k of s.keys){
-    if(k.createdAt)events.push({at:k.createdAt,type:"Key criada",key:k.code,detail:`Prazo: ${k.durationDays} dias${k.note?` · ${k.note}`:""}`});
-    if(k.activatedAt)events.push({at:k.activatedAt,type:"Key ativada",key:k.code,detail:"Primeiro acesso e vínculo ao navegador."});
-    if(k.lastAccessAt)events.push({at:k.lastAccessAt,type:"Último acesso",key:k.code,detail:`Total de acessos: ${k.accessCount||0}`});
-    if(k.revokedAt)events.push({at:k.revokedAt,type:"Key revogada",key:k.code,detail:"Revogada pelo administrador."});
-    if(keyStatus(k)==="expired")events.push({at:new Date(ms(k.activatedAt)+Number(k.durationDays)*86400000),type:"Key expirada",key:k.code,detail:"Prazo encerrado."});
-  }
-  for(const x of s.stock){
-    if(x.status==="delivered"&&x.deliveredAt)events.push({at:x.deliveredAt,type:"Entrega",key:x.deliveredToKeyCode||"Admin",detail:`Item ${x.id} marcado como entregue.`});
-  }
-  events.sort((a,b)=>ms(b.at)-ms(a.at));
-  const q=logSearch.trim().toLowerCase(),f=events.filter(x=>!q||x.type.toLowerCase().includes(q)||(x.key||"").toLowerCase().includes(q)||x.detail.toLowerCase().includes(q));
-
-  c.innerHTML=`<div class="section" style="margin-top:0"><div><h2>Logs das keys</h2><p>Gerados a partir dos registros protegidos de keys e entregas.</p></div><div class="toolbar"><input id="logSearch" placeholder="Buscar..." value="${esc(logSearch)}"></div></div>
-  <div class="tablewrap"><table><thead><tr><th>Data</th><th>Evento</th><th>Key</th><th>Detalhe</th></tr></thead><tbody>${f.map(x=>`<tr><td>${fmt(x.at)}</td><td><b>${esc(x.type)}</b></td><td class="mono">${esc(x.key||"—")}</td><td>${esc(x.detail)}</td></tr>`).join("")||`<tr><td colspan="4"><div class="empty">Sem registros.</div></td></tr>`}</tbody></table></div>`;
-  document.getElementById("logSearch").onchange=e=>{logSearch=e.target.value;renderAdmin()};
+  for(const k of s.keys){if(k.createdAt)events.push({at:k.createdAt,type:"Key criada",key:k.code,detail:`${k.durationDays} dias`});if(k.activatedAt)events.push({at:k.activatedAt,type:"Key ativada",key:k.code,detail:"Primeiro acesso"});if(k.revokedAt)events.push({at:k.revokedAt,type:"Key revogada",key:k.code,detail:"Revogada pelo admin"})}
+  for(const l of s.logs){const k=s.keys.find(x=>x.hash===l.keyHash);events.push({at:l.at,type:"Login",key:k?.code||l.keyHash,detail:"Acesso com key"})}
+  for(const x of s.stock){if(x.status==="delivered"&&x.deliveredAt){const k=s.keys.find(v=>v.hash===x.deliveredToKeyHash);events.push({at:x.deliveredAt,type:"Entrega",key:k?.code||"Admin",detail:`Item ${x.id}`})}}
+  events.sort((a,b)=>toms(b.at)-toms(a.at));const q=logSearch.trim().toLowerCase(),f=events.filter(x=>!q||x.type.toLowerCase().includes(q)||(x.key||"").toLowerCase().includes(q)||x.detail.toLowerCase().includes(q));
+  c.innerHTML=`<div class="section" style="margin-top:0"><div><h2>Logs</h2></div><div class="toolbar"><input id="ls" placeholder="Buscar..." value="${esc(logSearch)}"></div></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Evento</th><th>Key</th><th>Detalhe</th></tr></thead><tbody>${f.map(x=>`<tr><td>${fmt(x.at)}</td><td><b>${esc(x.type)}</b></td><td class="mono">${esc(x.key||"—")}</td><td>${esc(x.detail)}</td></tr>`).join("")||`<tr><td colspan="4"><div class="empty">Sem logs.</div></td></tr>`}</tbody></table></div>`;document.getElementById("ls").onchange=e=>{logSearch=e.target.value;renderAdmin()};
 }
+function adminAccount(c,s){c.innerHTML=`<div class="grid g2"><div class="card"><h2>Administrador</h2><div class="msg mono small">${esc(adminAuth.currentUser?.email||"—")}<br>UID: ${esc(adminAuth.currentUser?.uid||"—")}</div></div><div class="card"><h2>Acesso oculto</h2><div class="notice">Na página pública: <b>ksadmin</b> abre o admin e <b>ksrules</b> abre as Rules FINAL V1.</div></div></div>`}
 
-function adminSettings(c,s){
-  c.innerHTML=`<div class="grid g2">
-    <div class="card">
-      <div class="section" style="margin:0 0 12px"><div><h2>Administrador atual</h2></div></div>
-      <div class="msg mono small">${esc(adminAuth.currentUser?.email||"—")}<br>UID: ${esc(adminAuth.currentUser?.uid||"—")}</div>
-    </div>
-
-    <div class="card">
-      <div class="section" style="margin:0 0 12px"><div><h2>Backup</h2><p>Exporta estoque e keys visíveis para o administrador.</p></div></div>
-      <button class="btn" id="backup">Baixar JSON</button>
-    </div>
-
-    <div class="card">
-      <div class="section" style="margin:0 0 12px"><div><h2>Segurança</h2></div></div>
-      <div class="notice ok">A autenticação administrativa é feita pelo Firebase Authentication e as permissões são aplicadas pelas regras do Firestore.</div>
-    </div>
-
-    <div class="card">
-      <div class="section" style="margin:0 0 12px"><div><h2>Acesso oculto</h2></div></div>
-      <div class="notice">Na página pública, sem selecionar nenhum campo, digite <b>ksadmin</b> para abrir o login administrativo.</div>
-    </div>
-  </div>`;
-
-  document.getElementById("backup").onclick=()=>{
-    const data={
-      exportedAt:new Date().toISOString(),
-      projectId:firebaseConfig.projectId,
-      keys:s.keys.map(k=>({...k,createdAt:fmt(k.createdAt),activatedAt:fmt(k.activatedAt),lastAccessAt:fmt(k.lastAccessAt)})),
-      stock:s.stock.map(x=>({...x,createdAt:fmt(x.createdAt),deliveredAt:fmt(x.deliveredAt)}))
-    };
-    const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=`keystock-backup-${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  };
+async function start(){
+  const code=sessionStorage.getItem(SESSION_KEY);
+  if(code){try{return await renderUser(code)}catch{}}
+  renderLogin();
 }
-
-home();
+start();
 </script>
 </body>
 </html>
