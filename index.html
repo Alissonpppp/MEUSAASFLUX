@@ -436,10 +436,29 @@ function openHiddenAdminLogin(){
   setTimeout(()=>document.getElementById("hiddenAdminEmail")?.focus(),50);
 }
 
+let hiddenAdminSequence="";
 document.addEventListener("keydown",e=>{
-  if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==="a"){
-    e.preventDefault();
-    openHiddenAdminLogin();
+  const tag=(e.target?.tagName||"").toUpperCase();
+
+  // Não intercepta o teclado enquanto o usuário estiver digitando
+  // nem enquanto o modal administrativo estiver aberto.
+  if(tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT"||modalEl.innerHTML.trim()){
+    return;
+  }
+
+  if(e.ctrlKey||e.altKey||e.metaKey){
+    hiddenAdminSequence="";
+    return;
+  }
+
+  if(e.key.length===1){
+    hiddenAdminSequence=(hiddenAdminSequence+e.key.toLowerCase()).slice(-7);
+
+    if(hiddenAdminSequence==="ksadmin"){
+      hiddenAdminSequence="";
+      e.preventDefault();
+      openHiddenAdminLogin();
+    }
   }
 });
 
@@ -784,7 +803,7 @@ function adminSettings(c,s){
 
     <div class="card">
       <div class="section" style="margin:0 0 12px"><div><h2>Acesso oculto</h2></div></div>
-      <div class="notice">Na página pública, pressione <b>Ctrl + Shift + A</b> para abrir o login administrativo.</div>
+      <div class="notice">Na página pública, sem selecionar nenhum campo, digite <b>ksadmin</b> para abrir o login administrativo.</div>
     </div>
   </div>`;
 
