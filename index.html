@@ -105,21 +105,27 @@ service cloud.firestore {
       return get(userPath()).data.activeKeyHash;
     }
 
-    function activeKeyPath() {
-      return /databases/$(database)/documents/keys/$(activeKeyHash());
+    function keyPath(keyHash) {
+      return /databases/$(database)/documents/keys/$(keyHash);
+    }
+
+    function claimPath(keyHash) {
+      return /databases/$(database)/documents/claims/$(keyHash);
     }
 
     function hasActiveKey() {
       return signedIn()
         && exists(userPath())
         && get(userPath()).data.activeKeyHash is string
-        && exists(activeKeyPath())
-        && get(activeKeyPath()).data.get('boundUid', null) == request.auth.uid
-        && get(activeKeyPath()).data.get('revoked', false) == false
-        && get(activeKeyPath()).data.get('activatedAt', null) is timestamp
-        && get(activeKeyPath()).data.get('durationDays', 0) in [7, 15, 30]
-        && request.time < get(activeKeyPath()).data.get('activatedAt', request.time)
-            + duration.value(get(activeKeyPath()).data.get('durationDays', 0), 'd');
+        && exists(keyPath(activeKeyHash()))
+        && exists(claimPath(activeKeyHash()))
+        && get(claimPath(activeKeyHash())).data.uid == request.auth.uid
+        && get(claimPath(activeKeyHash())).data.keyHash == activeKeyHash()
+        && get(keyPath(activeKeyHash())).data.revoked == false
+        && get(claimPath(activeKeyHash())).data.activatedAt is timestamp
+        && get(claimPath(activeKeyHash())).data.durationDays in [7, 15, 30]
+        && request.time < get(claimPath(activeKeyHash())).data.activatedAt
+            + duration.value(get(claimPath(activeKeyHash())).data.durationDays, 'd');
     }
 
     match /admins/{uid} {
@@ -128,56 +134,47 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Clientes podem ler UMA key pelo hash conhecido, mas não listar keys.
+    // Somente o admin altera/cria/exclui documentos de keys.
     match /keys/{keyHash} {
+      allow get: if isAdmin() || signedIn();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // O primeiro navegador cria o claim. Como o ID = hash da key,
+    // só pode existir um claim por key.
+    match /claims/{keyHash} {
       allow get: if isAdmin()
         || (
           signedIn()
-          && (
-            resource.data.get('boundUid', null) == null
-            || resource.data.get('boundUid', null) == request.auth.uid
-          )
+          && resource.data.uid == request.auth.uid
         );
 
       allow list: if isAdmin();
 
-      allow create, delete: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys()
+            .hasOnly(['keyHash','keyCode','uid','activatedAt','durationDays'])
+        && request.resource.data.keyHash == keyHash
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.activatedAt == request.time
+        && exists(keyPath(keyHash))
+        && get(keyPath(keyHash)).data.revoked == false
+        && get(keyPath(keyHash)).data.durationDays in [7, 15, 30]
+        && request.resource.data.durationDays == get(keyPath(keyHash)).data.durationDays
+        && request.resource.data.keyCode == get(keyPath(keyHash)).data.code;
 
-      allow update: if isAdmin()
-        || (
-          // Primeira ativação: só pode vincular uma key ainda livre ao próprio UID.
-          signedIn()
-          && resource.data.get('boundUid', null) == null
-          && resource.data.get('revoked', false) == false
-          && resource.data.get('durationDays', 0) in [7, 15, 30]
-          && request.resource.data.get('boundUid', null) == request.auth.uid
-          && request.resource.data.activatedAt == request.time
-          && request.resource.data.lastAccessAt == request.time
-          && request.resource.data.accessCount == resource.data.get('accessCount', 0) + 1
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['boundUid','activatedAt','lastAccessAt','accessCount'])
-        )
-        || (
-          // Acessos seguintes: só o mesmo UID pode atualizar último acesso/contador.
-          signedIn()
-          && resource.data.get('boundUid', null) == request.auth.uid
-          && resource.data.get('revoked', false) == false
-          && resource.data.get('activatedAt', null) is timestamp
-          && resource.data.get('durationDays', 0) in [7, 15, 30]
-          && request.time < resource.data.get('activatedAt', request.time)
-              + duration.value(resource.data.get('durationDays', 0), 'd')
-          && request.resource.data.lastAccessAt == request.time
-          && request.resource.data.accessCount == resource.data.get('accessCount', 0) + 1
-          && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['lastAccessAt','accessCount'])
-        );
+      allow update: if false;
+      allow delete: if isAdmin();
     }
 
     match /users/{uid} {
       allow get: if isAdmin() || (signedIn() && request.auth.uid == uid);
       allow list: if isAdmin();
 
-      // O usuário pode salvar apenas qual hash de key está usando.
-      // Isso sozinho NÃO libera estoque: hasActiveKey() confere se a key pertence ao UID.
+      // activeKeyHash sozinho não libera nada.
+      // hasActiveKey() também exige um claim pertencente ao mesmo UID.
       allow create, update: if isAdmin()
         || (
           signedIn()
@@ -232,7 +229,8 @@ service cloud.firestore {
           && request.resource.data.status == 'delivered'
           && request.resource.data.deliveredToUid == request.auth.uid
           && request.resource.data.deliveredToKeyHash == activeKeyHash()
-          && request.resource.data.deliveredToKeyCode == get(activeKeyPath()).data.code
+          && request.resource.data.deliveredToKeyCode
+              == get(keyPath(activeKeyHash())).data.code
           && request.resource.data.deliveredAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly([
@@ -274,7 +272,7 @@ service cloud.firestore {
   }
 }`;
 
-const RULES_REVISION="V3-LEGACY-FIELDS";
+const RULES_REVISION="CLAIM-V1-NO-KEY-UPDATE";
 const adminApp = initializeApp(firebaseConfig, "adminApp");
 const clientApp = initializeApp(firebaseConfig, "clientApp");
 const adminAuth = getAuth(adminApp);
@@ -307,7 +305,7 @@ function errorText(e){
   console.error(e);
   const c=e?.code||"";
   if(String(e?.message||"").startsWith("ETAPA "))return e.message;
-  if(c.includes("permission-denied"))return"O Firestore bloqueou esta ação. Digite ksrules na página vazia, copie as regras desta versão e publique em Firestore Database → Rules.";
+  if(c.includes("permission-denied"))return"O Firestore bloqueou esta ação. Digite ksrules na página vazia, copie as Rules CLAIM V1 e publique em Firestore Database → Rules.";
   if(c.includes("unauthorized-domain"))return"Adicione o domínio do seu GitHub Pages em Authentication > Settings > Authorized domains.";
   if(c.includes("operation-not-allowed"))return"O login Anonymous está desativado. No Firebase: Authentication → Sign-in method → Anonymous → Enable.";
   if(c.includes("admin-restricted-operation"))return"O Firebase bloqueou o login anônimo. Ative Anonymous em Authentication → Sign-in method.";
@@ -573,7 +571,7 @@ function openHiddenAdminLogin(){
 }
 function openHiddenRules(){
   modalEl.innerHTML=`<div class="modalbg" id="rulesModalBg"><div class="modal">
-    <h3>Firestore Rules V3 — compatíveis com keys antigas</h3>
+    <h3>Firestore Rules CLAIM V1 — sem KEY_BIND</h3>
     <p>Copie e publique em Firestore Database → Rules.</p>
     <div class="codebox" id="hiddenRulesBox">${esc(FIRESTORE_RULES)}</div>
     <div class="modalact"><button class="btn primary" id="hiddenCopyRules">Copiar regras</button><button class="btn" id="hiddenRulesClose">Fechar</button></div>
@@ -626,107 +624,135 @@ function showAdminUidHelp(uid){
 }
 
 async function loginKey(code){
-  let stage="AUTH_ANON";
   const user=await ensureAnon();
   const uid=user.uid;
   const hash=await sha256(code);
+
   const keyRef=doc(clientDb,"keys",hash);
+  const claimRef=doc(clientDb,"claims",hash);
   const userRef=doc(clientDb,"users",uid);
 
-  // 1) Testa a leitura da key separadamente para identificar erro de regra.
-  stage="KEY_READ";
-  let firstSnap;
+  // 1) A key é somente leitura para clientes.
+  let keySnap;
   try{
-    firstSnap=await getDoc(keyRef);
+    keySnap=await getDoc(keyRef);
   }catch(e){
-    const err=new Error("ETAPA KEY_READ: o Firestore não permitiu ler esta key. Publique as regras desta versão e confirme Anonymous ativo.");
-    err.cause=e;
-    throw err;
+    throw new Error("ETAPA KEY_READ: o Firestore bloqueou a leitura da key. Publique as Rules CLAIM V1.");
   }
 
-  if(!firstSnap.exists())throw new Error("Key inválida. Ela não existe no Firestore.");
-  const firstKey=firstSnap.data();
+  if(!keySnap.exists())throw new Error("Key inválida. Ela não existe.");
+  const k=keySnap.data();
 
-  if(firstKey.revoked)throw new Error("Esta key foi revogada.");
-  if(firstKey.activatedAt&&Date.now()>=ms(firstKey.activatedAt)+Number(firstKey.durationDays)*86400000){
-    throw new Error("Esta key expirou.");
-  }
+  if(k.revoked)throw new Error("Esta key foi revogada.");
+  if(![7,15,30].includes(Number(k.durationDays)))throw new Error("Esta key possui um prazo inválido.");
 
-  // 2) Atualiza SOMENTE o documento da key.
-  stage="KEY_BIND";
+  // 2) Procura o claim. Se for de outro UID, as Rules negam a leitura:
+  // isso significa que a key já pertence a outro navegador.
+  let claimSnap=null;
   try{
-    await runTransaction(clientDb,async tx=>{
-      const ks=await tx.get(keyRef);
-      if(!ks.exists())throw new Error("Key inválida.");
-      const k=ks.data();
-
-      if(k.revoked)throw new Error("Esta key foi revogada.");
-      if(k.activatedAt&&Date.now()>=ms(k.activatedAt)+Number(k.durationDays)*86400000){
-        throw new Error("Esta key expirou.");
-      }
-
-      if(!k.boundUid){
-        tx.update(keyRef,{
-          boundUid:uid,
-          activatedAt:serverTimestamp(),
-          lastAccessAt:serverTimestamp(),
-          accessCount:Number(k.accessCount||0)+1
-        });
-      }else{
-        if(k.boundUid!==uid)throw new Error("Esta key já foi vinculada a outro navegador.");
-        tx.update(keyRef,{
-          lastAccessAt:serverTimestamp(),
-          accessCount:Number(k.accessCount||0)+1
-        });
-      }
-    });
+    claimSnap=await getDoc(claimRef);
   }catch(e){
-    if(
-      String(e?.message||"").includes("revogada") ||
-      String(e?.message||"").includes("expirou") ||
-      String(e?.message||"").includes("outro navegador")
-    ){
-      throw e;
+    if(String(e?.code||"").includes("permission-denied")){
+      throw new Error("Esta key já foi vinculada a outro navegador.");
     }
-    const err=new Error("ETAPA KEY_BIND: o Firestore leu a key, mas bloqueou a ativação. Publique as Rules V3 desta versão. Elas aceitam também keys antigas com campos opcionais ausentes.");
-    err.cause=e;
-    throw err;
+    throw e;
   }
 
-  // 3) Salva a sessão do usuário DEPOIS que a key já foi vinculada.
-  // A regra permite apenas activeKeyHash + updatedAt.
-  stage="USER_SESSION";
+  // 3) Primeiro acesso: cria um claim único. A KEY NÃO É ALTERADA.
+  if(!claimSnap.exists()){
+    try{
+      await setDoc(claimRef,{
+        keyHash:hash,
+        keyCode:code,
+        uid,
+        activatedAt:serverTimestamp(),
+        durationDays:Number(k.durationDays)
+      });
+    }catch(e){
+      // Se duas pessoas tentarem ao mesmo tempo, apenas uma consegue criar.
+      try{
+        const check=await getDoc(claimRef);
+        if(check.exists()&&check.data().uid===uid){
+          claimSnap=check;
+        }else{
+          throw new Error("Esta key já foi vinculada a outro navegador.");
+        }
+      }catch(e2){
+        if(String(e2?.message||"").includes("outro navegador"))throw e2;
+        throw new Error("ETAPA CLAIM_CREATE: o Firestore bloqueou a criação do vínculo. Publique as Rules CLAIM V1.");
+      }
+    }
+  }else{
+    if(claimSnap.data().uid!==uid)throw new Error("Esta key já foi vinculada a outro navegador.");
+  }
+
+  // 4) Lê novamente o claim para obter o timestamp real do servidor.
+  let finalClaim;
+  try{
+    const cs=await getDoc(claimRef);
+    if(!cs.exists())throw new Error("Vínculo não encontrado.");
+    finalClaim=cs.data();
+  }catch(e){
+    throw new Error("ETAPA CLAIM_READ: o vínculo foi criado, mas não pôde ser lido.");
+  }
+
+  const activatedMs=ms(finalClaim.activatedAt);
+  const expiresAt=activatedMs+Number(finalClaim.durationDays)*86400000;
+  if(!activatedMs)throw new Error("A ativação ainda não foi confirmada pelo Firebase. Atualize e tente novamente.");
+  if(Date.now()>=expiresAt)throw new Error("Esta key expirou.");
+
+  // 5) Salva apenas a key ativa do usuário.
   try{
     await setDoc(userRef,{
       activeKeyHash:hash,
       updatedAt:serverTimestamp()
     },{merge:true});
   }catch(e){
-    const err=new Error("ETAPA USER_SESSION: a key foi vinculada, mas o Firestore bloqueou o documento de sessão do usuário. Publique as regras desta versão.");
-    err.cause=e;
-    throw err;
+    throw new Error("ETAPA USER_SESSION: o Firestore bloqueou a sessão do usuário. Publique as Rules CLAIM V1.");
   }
 
-  return{uid,hash};
+  return{uid,hash,claim:finalClaim,expiresAt};
 }
 async function clientState(code){
-  const user=await ensureAnon(),uid=user.uid,hash=await sha256(code);
-  const [keySnap,userSnap]=await Promise.all([
-    getDoc(doc(clientDb,"keys",hash)),
-    getDoc(doc(clientDb,"users",uid))
-  ]);
+  const user=await ensureAnon();
+  const uid=user.uid;
+  const hash=await sha256(code);
+
+  const keyRef=doc(clientDb,"keys",hash);
+  const claimRef=doc(clientDb,"claims",hash);
+  const userRef=doc(clientDb,"users",uid);
+
+  let keySnap,claimSnap,userSnap;
+  try{
+    [keySnap,claimSnap,userSnap]=await Promise.all([
+      getDoc(keyRef),
+      getDoc(claimRef),
+      getDoc(userRef)
+    ]);
+  }catch(e){
+    if(String(e?.code||"").includes("permission-denied")){
+      throw new Error("Esta key está vinculada a outro navegador ou as Rules CLAIM V1 ainda não foram publicadas.");
+    }
+    throw e;
+  }
 
   if(!keySnap.exists())throw new Error("Key inválida.");
-  const k=keySnap.data();
-  if(k.boundUid!==uid)throw new Error("Esta key está vinculada a outro navegador.");
-  if(k.revoked)throw new Error("Esta key foi revogada.");
-  if(!k.activatedAt)throw new Error("Esta key ainda não foi ativada.");
+  if(!claimSnap.exists())throw new Error("Esta key ainda não foi ativada.");
 
-  const exp=ms(k.activatedAt)+Number(k.durationDays)*86400000;
+  const k=keySnap.data();
+  const claim=claimSnap.data();
+
+  if(claim.uid!==uid)throw new Error("Esta key está vinculada a outro navegador.");
+  if(k.revoked)throw new Error("Esta key foi revogada.");
+
+  const exp=ms(claim.activatedAt)+Number(claim.durationDays)*86400000;
   if(Date.now()>=exp)throw new Error("Esta key expirou.");
 
   if(!userSnap.exists()||userSnap.data().activeKeyHash!==hash){
-    await setDoc(doc(clientDb,"users",uid),{activeKeyHash:hash,updatedAt:serverTimestamp()},{merge:true});
+    await setDoc(userRef,{
+      activeKeyHash:hash,
+      updatedAt:serverTimestamp()
+    },{merge:true});
   }
 
   const delSnap=await getDocs(collection(clientDb,"users",uid,"deliveries"));
@@ -739,19 +765,34 @@ async function clientState(code){
   for(const x of metas){
     try{
       const cs=await getDoc(doc(clientDb,"stockContent",x.stockId));
-      if(cs.exists())deliveries.push({stockId:x.stockId,text:cs.data().text||"",deliveredAt:x.deliveredAt});
+      if(cs.exists()){
+        deliveries.push({
+          stockId:x.stockId,
+          text:cs.data().text||"",
+          deliveredAt:x.deliveredAt
+        });
+      }
     }catch{}
   }
 
   let av;
   try{
-    av=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1)));
+    av=await getDocs(
+      query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1))
+    );
   }catch(e){
-    const err=new Error("ETAPA STOCK_QUERY: a key entrou, mas o Firestore bloqueou a consulta do estoque. Verifique se as regras desta versão foram publicadas.");
-    err.cause=e;
-    throw err;
+    throw new Error("ETAPA STOCK_QUERY: a key entrou, mas o Firestore bloqueou a consulta do estoque. Publique as Rules CLAIM V1.");
   }
-  return{uid,hash,key:k,expiresAt:exp,deliveries,hasStock:!av.empty};
+
+  return{
+    uid,
+    hash,
+    key:k,
+    claim,
+    expiresAt:exp,
+    deliveries,
+    hasStock:!av.empty
+  };
 }
 async function renderUser(code){
   clearInterval(timer);load("Carregando suas entregas...");
@@ -825,23 +866,43 @@ async function claimStock(code,keyHash){
 
 async function adminSnapshot(){
   if(!await isAdmin())throw new Error("Usuário sem permissão administrativa.");
-  const [keysSnap,stockSnap]=await Promise.all([
+
+  const [keysSnap,claimsSnap,stockSnap]=await Promise.all([
     getDocs(collection(adminDb,"keys")),
+    getDocs(collection(adminDb,"claims")),
     getDocs(collection(adminDb,"stockMeta"))
   ]);
 
-  const keys=keysSnap.docs.map(d=>({hash:d.id,...d.data()}));
+  const claimsByHash=new Map(
+    claimsSnap.docs.map(d=>[d.id,{id:d.id,...d.data()}])
+  );
+
+  const keys=keysSnap.docs.map(d=>{
+    const base={hash:d.id,...d.data()};
+    const claim=claimsByHash.get(d.id);
+    return{
+      ...base,
+      activatedAt:claim?.activatedAt||null,
+      boundUid:claim?.uid||null,
+      lastAccessAt:claim?.activatedAt||null,
+      accessCount:claim?1:0
+    };
+  });
+
   const stock=[];
   for(const m of stockSnap.docs){
     let text="";
-    try{const c=await getDoc(doc(adminDb,"stockContent",m.id));if(c.exists())text=c.data().text||""}catch{}
+    try{
+      const c=await getDoc(doc(adminDb,"stockContent",m.id));
+      if(c.exists())text=c.data().text||"";
+    }catch{}
     stock.push({id:m.id,...m.data(),text});
   }
+
   keys.sort((a,b)=>ms(b.createdAt)-ms(a.createdAt));
   stock.sort((a,b)=>ms(b.createdAt)-ms(a.createdAt));
   return{keys,stock};
 }
-
 async function renderAdmin(){
   clearInterval(timer);load("Carregando painel...");
   let s;
@@ -950,7 +1011,7 @@ function adminKeys(c,s){
       for(let i=0;i<qty;i++){
         let code=makeKey(),hash=await sha256(code);
         made.push(code);
-        batch.set(doc(adminDb,"keys",hash),{code,durationDays:days,note,createdAt:serverTimestamp(),activatedAt:null,boundUid:null,lastAccessAt:null,accessCount:0,revoked:false,revokedAt:null});
+        batch.set(doc(adminDb,"keys",hash),{code,durationDays:days,note,createdAt:serverTimestamp(),revoked:false,revokedAt:null});
       }
       await batch.commit();await copyText(made.join("\n"),false);toast(`${qty} key(s) criada(s) e copiadas.`);renderAdmin();
     }catch(e){toast(errorText(e),true)}
@@ -970,7 +1031,10 @@ function adminKeys(c,s){
   document.querySelectorAll("[data-kdelete]").forEach(b=>b.onclick=()=>confirmBox("Excluir key","Ela deixará de funcionar imediatamente.",async()=>{
     const k=s.keys.find(x=>x.hash===b.dataset.kdelete);if(!k)return;
     try{
-      await deleteDoc(doc(adminDb,"keys",k.hash));
+      const batch=writeBatch(adminDb);
+      batch.delete(doc(adminDb,"keys",k.hash));
+      batch.delete(doc(adminDb,"claims",k.hash));
+      await batch.commit();
       toast("Key excluída.");renderAdmin();
     }catch(e){toast(errorText(e),true)}
   }));
