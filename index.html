@@ -18,6 +18,10 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}.hidden{display:
 .card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.016));border:1px solid rgba(255,255,255,.075);border-radius:var(--r);padding:20px;box-shadow:var(--shadow)}
 .auth .card{padding:28px}.hero{font-size:clamp(29px,6vw,44px);margin:14px 0 8px;line-height:1.02}.sub{color:var(--muted);line-height:1.55;margin:0 0 22px}
 .admin-pass-wrap{display:grid;grid-template-columns:1fr auto;gap:8px}
+.key-input-wrap{display:grid;grid-template-columns:1fr auto;gap:8px}
+.key-input-wrap input{min-width:0;pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important}
+.key-error{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,96,116,.3);background:rgba(255,96,116,.08);color:#ffc1ca;font-size:13px;line-height:1.45}
+
 .admin-pass-masked{-webkit-text-security:disc;text-security:disc}
 .admin-pass-masked.reveal{-webkit-text-security:none;text-security:none}
 .field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:13px;font-weight:850;color:#ccd5e3}
@@ -87,40 +91,35 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function adminPath() {
-      return /databases/$(database)/documents/admins/$(request.auth.uid);
-    }
-
     function isAdmin() {
       return signedIn()
-        && exists(adminPath())
-        && get(adminPath()).data.active == true;
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
     }
 
     function userPath() {
       return /databases/$(database)/documents/users/$(request.auth.uid);
     }
 
-    function currentKeyHash() {
+    function activeKeyHash() {
       return get(userPath()).data.activeKeyHash;
     }
 
-    function bindingPath(keyHash) {
-      return /databases/$(database)/documents/users/$(request.auth.uid)/bindings/$(keyHash);
-    }
-
-    function currentBinding() {
-      return get(bindingPath(currentKeyHash()));
+    function activeKeyPath() {
+      return /databases/$(database)/documents/keys/$(activeKeyHash());
     }
 
     function hasActiveKey() {
       return signedIn()
         && exists(userPath())
         && get(userPath()).data.activeKeyHash is string
-        && exists(bindingPath(get(userPath()).data.activeKeyHash))
-        && currentBinding().data.revoked == false
-        && request.time < currentBinding().data.activatedAt
-            + duration.value(currentBinding().data.durationDays, 'd');
+        && exists(activeKeyPath())
+        && get(activeKeyPath()).data.get('boundUid', null) == request.auth.uid
+        && get(activeKeyPath()).data.get('revoked', false) == false
+        && get(activeKeyPath()).data.get('activatedAt', null) is timestamp
+        && get(activeKeyPath()).data.get('durationDays', 0) in [7, 15, 30]
+        && request.time < get(activeKeyPath()).data.get('activatedAt', request.time)
+            + duration.value(get(activeKeyPath()).data.get('durationDays', 0), 'd');
     }
 
     match /admins/{uid} {
@@ -131,11 +130,13 @@ service cloud.firestore {
 
     match /keys/{keyHash} {
       allow get: if isAdmin()
-        || (signedIn()
+        || (
+          signedIn()
           && (
-            resource.data.boundUid == null
-            || resource.data.boundUid == request.auth.uid
-          ));
+            resource.data.get('boundUid', null) == null
+            || resource.data.get('boundUid', null) == request.auth.uid
+          )
+        );
 
       allow list: if isAdmin();
 
@@ -143,30 +144,29 @@ service cloud.firestore {
 
       allow update: if isAdmin()
         || (
+          // Primeira ativação: só pode vincular uma key ainda livre ao próprio UID.
           signedIn()
-          && resource.data.boundUid == null
-          && resource.data.revoked == false
-          && request.resource.data.boundUid == request.auth.uid
+          && resource.data.get('boundUid', null) == null
+          && resource.data.get('revoked', false) == false
+          && resource.data.get('durationDays', 0) in [7, 15, 30]
+          && request.resource.data.get('boundUid', null) == request.auth.uid
           && request.resource.data.activatedAt == request.time
           && request.resource.data.lastAccessAt == request.time
-          && request.resource.data.accessCount == resource.data.accessCount + 1
+          && request.resource.data.accessCount == resource.data.get('accessCount', 0) + 1
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['boundUid','activatedAt','lastAccessAt','accessCount'])
-          && getAfter(
-              /databases/$(database)/documents/users/$(request.auth.uid)/bindings/$(keyHash)
-            ).data.keyHash == keyHash
-          && getAfter(
-              /databases/$(database)/documents/users/$(request.auth.uid)/bindings/$(keyHash)
-            ).data.activatedAt == request.time
         )
         || (
+          // Acessos seguintes: só o mesmo UID pode atualizar último acesso/contador.
           signedIn()
-          && resource.data.boundUid == request.auth.uid
-          && resource.data.revoked == false
-          && request.time < resource.data.activatedAt
-              + duration.value(resource.data.durationDays, 'd')
+          && resource.data.get('boundUid', null) == request.auth.uid
+          && resource.data.get('revoked', false) == false
+          && resource.data.get('activatedAt', null) is timestamp
+          && resource.data.get('durationDays', 0) in [7, 15, 30]
+          && request.time < resource.data.get('activatedAt', request.time)
+              + duration.value(resource.data.get('durationDays', 0), 'd')
           && request.resource.data.lastAccessAt == request.time
-          && request.resource.data.accessCount == resource.data.accessCount + 1
+          && request.resource.data.accessCount == resource.data.get('accessCount', 0) + 1
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['lastAccessAt','accessCount'])
         );
@@ -176,6 +176,8 @@ service cloud.firestore {
       allow get: if isAdmin() || (signedIn() && request.auth.uid == uid);
       allow list: if isAdmin();
 
+      // O usuário pode salvar apenas qual hash de key está usando.
+      // Isso sozinho NÃO libera estoque: hasActiveKey() confere se a key pertence ao UID.
       allow create, update: if isAdmin()
         || (
           signedIn()
@@ -183,44 +185,9 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['activeKeyHash','updatedAt'])
           && request.resource.data.activeKeyHash is string
           && request.resource.data.updatedAt == request.time
-          && getAfter(
-              /databases/$(database)/documents/users/$(uid)/bindings/$(request.resource.data.activeKeyHash)
-            ).data.keyHash == request.resource.data.activeKeyHash
-          && getAfter(
-              /databases/$(database)/documents/users/$(uid)/bindings/$(request.resource.data.activeKeyHash)
-            ).data.revoked == false
-          && request.time < getAfter(
-              /databases/$(database)/documents/users/$(uid)/bindings/$(request.resource.data.activeKeyHash)
-            ).data.activatedAt
-              + duration.value(
-                  getAfter(
-                    /databases/$(database)/documents/users/$(uid)/bindings/$(request.resource.data.activeKeyHash)
-                  ).data.durationDays,
-                  'd'
-                )
         );
 
       allow delete: if isAdmin();
-
-      match /bindings/{keyHash} {
-        allow get: if isAdmin() || (signedIn() && request.auth.uid == uid);
-        allow list: if isAdmin() || (signedIn() && request.auth.uid == uid);
-
-        allow create: if signedIn()
-          && request.auth.uid == uid
-          && request.resource.data.keys()
-              .hasOnly(['keyHash','keyCode','activatedAt','durationDays','revoked'])
-          && request.resource.data.keyHash == keyHash
-          && request.resource.data.activatedAt == request.time
-          && request.resource.data.durationDays in [7,15,30]
-          && request.resource.data.revoked == false
-          && getAfter(/databases/$(database)/documents/keys/$(keyHash)).data.boundUid == uid
-          && getAfter(/databases/$(database)/documents/keys/$(keyHash)).data.activatedAt == request.time
-          && getAfter(/databases/$(database)/documents/keys/$(keyHash)).data.durationDays
-              == request.resource.data.durationDays;
-
-        allow update, delete: if isAdmin();
-      }
 
       match /deliveries/{stockId} {
         allow get, list: if isAdmin() || (signedIn() && request.auth.uid == uid);
@@ -230,12 +197,12 @@ service cloud.firestore {
           && hasActiveKey()
           && request.resource.data.keys().hasOnly(['stockId','keyHash','deliveredAt'])
           && request.resource.data.stockId == stockId
-          && request.resource.data.keyHash == currentKeyHash()
+          && request.resource.data.keyHash == activeKeyHash()
           && request.resource.data.deliveredAt == request.time
           && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.status == 'delivered'
           && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToUid == uid
           && getAfter(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToKeyHash
-              == currentKeyHash();
+              == activeKeyHash();
 
         allow update: if false;
         allow delete: if isAdmin();
@@ -251,7 +218,7 @@ service cloud.firestore {
             || (
               resource.data.status == 'delivered'
               && resource.data.deliveredToUid == request.auth.uid
-              && resource.data.deliveredToKeyHash == currentKeyHash()
+              && resource.data.deliveredToKeyHash == activeKeyHash()
             )
           )
         );
@@ -264,8 +231,8 @@ service cloud.firestore {
           && resource.data.status == 'available'
           && request.resource.data.status == 'delivered'
           && request.resource.data.deliveredToUid == request.auth.uid
-          && request.resource.data.deliveredToKeyHash == currentKeyHash()
-          && request.resource.data.deliveredToKeyCode == currentBinding().data.keyCode
+          && request.resource.data.deliveredToKeyHash == activeKeyHash()
+          && request.resource.data.deliveredToKeyCode == get(activeKeyPath()).data.code
           && request.resource.data.deliveredAt == request.time
           && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly([
@@ -277,7 +244,7 @@ service cloud.firestore {
             ).data.stockId == stockId
           && getAfter(
               /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-            ).data.keyHash == currentKeyHash()
+            ).data.keyHash == activeKeyHash()
         );
     }
 
@@ -290,11 +257,11 @@ service cloud.firestore {
           )
           && get(
             /databases/$(database)/documents/users/$(request.auth.uid)/deliveries/$(stockId)
-          ).data.keyHash == currentKeyHash()
+          ).data.keyHash == activeKeyHash()
           && get(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToUid
               == request.auth.uid
           && get(/databases/$(database)/documents/stockMeta/$(stockId)).data.deliveredToKeyHash
-              == currentKeyHash()
+              == activeKeyHash()
         );
 
       allow list: if isAdmin();
@@ -307,6 +274,7 @@ service cloud.firestore {
   }
 }`;
 
+const RULES_REVISION="V3-LEGACY-FIELDS";
 const adminApp = initializeApp(firebaseConfig, "adminApp");
 const clientApp = initializeApp(firebaseConfig, "clientApp");
 const adminAuth = getAuth(adminApp);
@@ -338,9 +306,11 @@ function keyLabel(s){return({unused:"Não usada",active:"Ativa",expired:"Expirad
 function errorText(e){
   console.error(e);
   const c=e?.code||"";
-  if(c.includes("permission-denied"))return"Firebase bloqueou a operação. Confira as Firestore Security Rules e a configuração do administrador.";
+  if(String(e?.message||"").startsWith("ETAPA "))return e.message;
+  if(c.includes("permission-denied"))return"O Firestore bloqueou esta ação. Digite ksrules na página vazia, copie as regras desta versão e publique em Firestore Database → Rules.";
   if(c.includes("unauthorized-domain"))return"Adicione o domínio do seu GitHub Pages em Authentication > Settings > Authorized domains.";
-  if(c.includes("operation-not-allowed"))return"Ative Email/Password e Anonymous no Firebase Authentication.";
+  if(c.includes("operation-not-allowed"))return"O login Anonymous está desativado. No Firebase: Authentication → Sign-in method → Anonymous → Enable.";
+  if(c.includes("admin-restricted-operation"))return"O Firebase bloqueou o login anônimo. Ative Anonymous em Authentication → Sign-in method.";
   if(c.includes("invalid-credential"))return"Email ou senha do administrador incorretos.";
   if(c.includes("failed-precondition")&&String(e.message).includes("index"))return"O Firestore pediu um índice. Abra o link mostrado no Console do navegador e crie o índice.";
   return e?.message?.replace(/^FirebaseError:\s*/,"")||"Ocorreu um erro.";
@@ -379,24 +349,127 @@ function renderLogin(){
   appEl.innerHTML=`<div class="auth"><div class="card">
     <div class="brand"><div class="logo">K</div><div>KeyStock</div></div>
     <h1 class="hero">Acesso</h1>
-    <p class="sub">Digite sua key para acessar suas entregas e solicitar novas contas.</p>
+    <p class="sub">Digite ou cole sua key para acessar suas entregas e solicitar novas contas.</p>
 
     <div id="keyBox">
-      <div class="field"><label>Key de acesso</label><input id="keyInput" class="mono" autocomplete="off" placeholder="KEY-XXXXX-XXXXX-XXXXX"></div>
-      <button class="btn primary block" id="keyGo">Entrar</button>
-      <div class="notice" style="margin-top:14px">Na primeira utilização a key começa a contar e fica vinculada a este navegador.</div>
+      <div class="field">
+        <label for="keyInput">Key de acesso</label>
+        <div class="key-input-wrap">
+          <input id="keyInput"
+                 class="mono"
+                 type="text"
+                 inputmode="text"
+                 autocomplete="off"
+                 autocapitalize="characters"
+                 spellcheck="false"
+                 aria-label="Key de acesso"
+                 placeholder="KEY-XXXXX-XXXXX-XXXXX">
+          <button class="btn sm" type="button" id="pasteKey">Colar key</button>
+        </div>
+      </div>
+
+      <button class="btn primary block" type="button" id="keyGo">Entrar</button>
+      <div id="keyError" class="key-error hidden"></div>
+
+      <div class="notice" style="margin-top:14px">
+        Na primeira utilização a key começa a contar e fica vinculada a este navegador.
+      </div>
     </div>
   </div></div>`;
 
-  const keyLogin=async()=>{
-    const code=document.getElementById("keyInput").value.trim().toUpperCase();
-    if(!/^KEY-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code))return toast("Formato de key inválido.",true);
-    try{load("Validando key...");await loginKey(code);sessionStorage.setItem(CLIENT_KEY_SESSION,code);renderUser(code)}catch(e){sessionStorage.removeItem(CLIENT_KEY_SESSION);toast(errorText(e),true);renderLogin()}
-  };
-  document.getElementById("keyGo").onclick=keyLogin;
-  document.getElementById("keyInput").onkeydown=e=>e.key==="Enter"&&keyLogin();
-}
+  const keyInput=document.getElementById("keyInput");
+  const keyError=document.getElementById("keyError");
+  const pasteButton=document.getElementById("pasteKey");
 
+  const showKeyError=msg=>{
+    keyError.textContent=msg;
+    keyError.classList.remove("hidden");
+    keyInput.focus();
+  };
+
+  const clearKeyError=()=>keyError.classList.add("hidden");
+
+  const normalizeKey=()=>{
+    let value=keyInput.value.toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9-]/g,"");
+
+    // Se o cliente colar somente os 15 caracteres, monta KEY-XXXXX-XXXXX-XXXXX.
+    const compact=value.replace(/^KEY-?/,"").replaceAll("-","");
+    if(compact.length===15 && /^[A-Z2-9]{15}$/.test(compact)){
+      value=`KEY-${compact.slice(0,5)}-${compact.slice(5,10)}-${compact.slice(10,15)}`;
+    }
+
+    keyInput.value=value.slice(0,23);
+  };
+
+  // Nenhum detector/atalho global interfere no campo de key.
+  ["keydown","keyup","keypress","input","beforeinput","paste","click","focus"].forEach(evt=>{
+    keyInput.addEventListener(evt,e=>e.stopPropagation());
+  });
+
+  keyInput.addEventListener("input",()=>{
+    normalizeKey();
+    clearKeyError();
+  });
+
+  keyInput.addEventListener("paste",()=>{
+    setTimeout(()=>{
+      normalizeKey();
+      clearKeyError();
+      keyInput.focus();
+    },0);
+  });
+
+  pasteButton.onclick=async()=>{
+    try{
+      const text=await navigator.clipboard.readText();
+      if(!text)return showKeyError("Sua área de transferência está vazia.");
+      keyInput.value=text;
+      normalizeKey();
+      clearKeyError();
+      keyInput.focus();
+      const len=keyInput.value.length;
+      try{keyInput.setSelectionRange(len,len)}catch{}
+    }catch{
+      showKeyError("O navegador não liberou a leitura automática. Cole a key com Ctrl + V.");
+    }
+  };
+
+  const keyLogin=async()=>{
+    clearKeyError();
+    normalizeKey();
+    const code=keyInput.value.trim().toUpperCase();
+
+    if(!/^KEY-[A-Z2-9]{5}-[A-Z2-9]{5}-[A-Z2-9]{5}$/.test(code)){
+      return showKeyError("Formato inválido. Use uma key no formato KEY-XXXXX-XXXXX-XXXXX.");
+    }
+
+    const oldText=document.getElementById("keyGo").textContent;
+    document.getElementById("keyGo").disabled=true;
+    document.getElementById("keyGo").textContent="Validando...";
+
+    try{
+      await loginKey(code);
+      sessionStorage.setItem(CLIENT_KEY_SESSION,code);
+      renderUser(code);
+    }catch(e){
+      sessionStorage.removeItem(CLIENT_KEY_SESSION);
+      document.getElementById("keyGo").disabled=false;
+      document.getElementById("keyGo").textContent=oldText;
+      showKeyError(errorText(e));
+    }
+  };
+
+  document.getElementById("keyGo").onclick=keyLogin;
+
+  keyInput.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      keyLogin();
+    }
+  });
+
+  setTimeout(()=>keyInput.focus(),80);
+}
 function openHiddenAdminLogin(){
   modalEl.innerHTML=`<div class="modalbg" id="adminModalBg"><div class="modal" style="max-width:520px">
     <h3>Acesso administrativo</h3>
@@ -498,6 +571,18 @@ function openHiddenAdminLogin(){
 
   setTimeout(()=>emailInput.focus(),80);
 }
+function openHiddenRules(){
+  modalEl.innerHTML=`<div class="modalbg" id="rulesModalBg"><div class="modal">
+    <h3>Firestore Rules V3 — compatíveis com keys antigas</h3>
+    <p>Copie e publique em Firestore Database → Rules.</p>
+    <div class="codebox" id="hiddenRulesBox">${esc(FIRESTORE_RULES)}</div>
+    <div class="modalact"><button class="btn primary" id="hiddenCopyRules">Copiar regras</button><button class="btn" id="hiddenRulesClose">Fechar</button></div>
+  </div></div>`;
+  document.getElementById("hiddenCopyRules").onclick=()=>copyText(FIRESTORE_RULES);
+  document.getElementById("hiddenRulesClose").onclick=()=>modalEl.innerHTML="";
+  document.getElementById("rulesModalBg").onclick=e=>e.target.id==="rulesModalBg"&&(modalEl.innerHTML="");
+}
+
 let hiddenAdminSequence="";
 document.addEventListener("keydown",e=>{
   const tag=(e.target?.tagName||"").toUpperCase();
@@ -520,6 +605,10 @@ document.addEventListener("keydown",e=>{
       hiddenAdminSequence="";
       e.preventDefault();
       openHiddenAdminLogin();
+    }else if(hiddenAdminSequence==="ksrules"){
+      hiddenAdminSequence="";
+      e.preventDefault();
+      openHiddenRules();
     }
   }
 });
@@ -537,54 +626,115 @@ function showAdminUidHelp(uid){
 }
 
 async function loginKey(code){
-  const user=await ensureAnon(),uid=user.uid,hash=await sha256(code);
+  let stage="AUTH_ANON";
+  const user=await ensureAnon();
+  const uid=user.uid;
+  const hash=await sha256(code);
   const keyRef=doc(clientDb,"keys",hash);
   const userRef=doc(clientDb,"users",uid);
-  const bindingRef=doc(clientDb,"users",uid,"bindings",hash);
 
-  await runTransaction(clientDb,async tx=>{
-    const ks=await tx.get(keyRef);
-    if(!ks.exists())throw new Error("Key inválida.");
-    const k=ks.data();
-    if(k.revoked)throw new Error("Esta key foi revogada.");
-    if(k.activatedAt&&Date.now()>=ms(k.activatedAt)+Number(k.durationDays)*86400000)throw new Error("Esta key expirou.");
+  // 1) Testa a leitura da key separadamente para identificar erro de regra.
+  stage="KEY_READ";
+  let firstSnap;
+  try{
+    firstSnap=await getDoc(keyRef);
+  }catch(e){
+    const err=new Error("ETAPA KEY_READ: o Firestore não permitiu ler esta key. Publique as regras desta versão e confirme Anonymous ativo.");
+    err.cause=e;
+    throw err;
+  }
 
-    if(!k.boundUid){
-      tx.update(keyRef,{
-        boundUid:uid,activatedAt:serverTimestamp(),lastAccessAt:serverTimestamp(),
-        accessCount:Number(k.accessCount||0)+1
-      });
-      tx.set(bindingRef,{
-        keyHash:hash,keyCode:code,activatedAt:serverTimestamp(),
-        durationDays:Number(k.durationDays),revoked:false
-      });
-      tx.set(userRef,{activeKeyHash:hash,updatedAt:serverTimestamp()},{merge:true});
-    }else{
-      if(k.boundUid!==uid)throw new Error("Esta key já foi vinculada a outro navegador.");
-      tx.update(keyRef,{lastAccessAt:serverTimestamp(),accessCount:Number(k.accessCount||0)+1});
-      tx.set(userRef,{activeKeyHash:hash,updatedAt:serverTimestamp()},{merge:true});
+  if(!firstSnap.exists())throw new Error("Key inválida. Ela não existe no Firestore.");
+  const firstKey=firstSnap.data();
+
+  if(firstKey.revoked)throw new Error("Esta key foi revogada.");
+  if(firstKey.activatedAt&&Date.now()>=ms(firstKey.activatedAt)+Number(firstKey.durationDays)*86400000){
+    throw new Error("Esta key expirou.");
+  }
+
+  // 2) Atualiza SOMENTE o documento da key.
+  stage="KEY_BIND";
+  try{
+    await runTransaction(clientDb,async tx=>{
+      const ks=await tx.get(keyRef);
+      if(!ks.exists())throw new Error("Key inválida.");
+      const k=ks.data();
+
+      if(k.revoked)throw new Error("Esta key foi revogada.");
+      if(k.activatedAt&&Date.now()>=ms(k.activatedAt)+Number(k.durationDays)*86400000){
+        throw new Error("Esta key expirou.");
+      }
+
+      if(!k.boundUid){
+        tx.update(keyRef,{
+          boundUid:uid,
+          activatedAt:serverTimestamp(),
+          lastAccessAt:serverTimestamp(),
+          accessCount:Number(k.accessCount||0)+1
+        });
+      }else{
+        if(k.boundUid!==uid)throw new Error("Esta key já foi vinculada a outro navegador.");
+        tx.update(keyRef,{
+          lastAccessAt:serverTimestamp(),
+          accessCount:Number(k.accessCount||0)+1
+        });
+      }
+    });
+  }catch(e){
+    if(
+      String(e?.message||"").includes("revogada") ||
+      String(e?.message||"").includes("expirou") ||
+      String(e?.message||"").includes("outro navegador")
+    ){
+      throw e;
     }
-  });
-}
+    const err=new Error("ETAPA KEY_BIND: o Firestore leu a key, mas bloqueou a ativação. Publique as Rules V3 desta versão. Elas aceitam também keys antigas com campos opcionais ausentes.");
+    err.cause=e;
+    throw err;
+  }
 
+  // 3) Salva a sessão do usuário DEPOIS que a key já foi vinculada.
+  // A regra permite apenas activeKeyHash + updatedAt.
+  stage="USER_SESSION";
+  try{
+    await setDoc(userRef,{
+      activeKeyHash:hash,
+      updatedAt:serverTimestamp()
+    },{merge:true});
+  }catch(e){
+    const err=new Error("ETAPA USER_SESSION: a key foi vinculada, mas o Firestore bloqueou o documento de sessão do usuário. Publique as regras desta versão.");
+    err.cause=e;
+    throw err;
+  }
+
+  return{uid,hash};
+}
 async function clientState(code){
   const user=await ensureAnon(),uid=user.uid,hash=await sha256(code);
-  const [keySnap,userSnap,bindingSnap]=await Promise.all([
+  const [keySnap,userSnap]=await Promise.all([
     getDoc(doc(clientDb,"keys",hash)),
-    getDoc(doc(clientDb,"users",uid)),
-    getDoc(doc(clientDb,"users",uid,"bindings",hash))
+    getDoc(doc(clientDb,"users",uid))
   ]);
-  if(!keySnap.exists()||!bindingSnap.exists())throw new Error("Acesso da key não encontrado.");
-  const k=keySnap.data(),b=bindingSnap.data();
-  if(k.boundUid!==uid||b.revoked||k.revoked)throw new Error("Esta key não está ativa.");
-  const exp=ms(b.activatedAt)+Number(b.durationDays)*86400000;
+
+  if(!keySnap.exists())throw new Error("Key inválida.");
+  const k=keySnap.data();
+  if(k.boundUid!==uid)throw new Error("Esta key está vinculada a outro navegador.");
+  if(k.revoked)throw new Error("Esta key foi revogada.");
+  if(!k.activatedAt)throw new Error("Esta key ainda não foi ativada.");
+
+  const exp=ms(k.activatedAt)+Number(k.durationDays)*86400000;
   if(Date.now()>=exp)throw new Error("Esta key expirou.");
+
   if(!userSnap.exists()||userSnap.data().activeKeyHash!==hash){
     await setDoc(doc(clientDb,"users",uid),{activeKeyHash:hash,updatedAt:serverTimestamp()},{merge:true});
   }
 
   const delSnap=await getDocs(collection(clientDb,"users",uid,"deliveries"));
-  const metas=delSnap.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.keyHash===hash).sort((a,b)=>ms(b.deliveredAt)-ms(a.deliveredAt));
+  const metas=delSnap.docs
+    .map(d=>({id:d.id,...d.data()}))
+    .filter(x=>x.keyHash===hash)
+    .sort((a,b)=>ms(b.deliveredAt)-ms(a.deliveredAt));
+
   const deliveries=[];
   for(const x of metas){
     try{
@@ -593,10 +743,16 @@ async function clientState(code){
     }catch{}
   }
 
-  const av=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1)));
-  return{uid,hash,key:k,binding:b,expiresAt:exp,deliveries,hasStock:!av.empty};
+  let av;
+  try{
+    av=await getDocs(query(collection(clientDb,"stockMeta"),where("status","==","available"),limit(1)));
+  }catch(e){
+    const err=new Error("ETAPA STOCK_QUERY: a key entrou, mas o Firestore bloqueou a consulta do estoque. Verifique se as regras desta versão foram publicadas.");
+    err.cause=e;
+    throw err;
+  }
+  return{uid,hash,key:k,expiresAt:exp,deliveries,hasStock:!av.empty};
 }
-
 async function renderUser(code){
   clearInterval(timer);load("Carregando suas entregas...");
   const st=await clientState(code);
@@ -807,21 +963,15 @@ function adminKeys(c,s){
     const next=!k.revoked;
     try{
       if(!next&&keyStatus(k)==="expired")return toast("Key expirada não pode ser reativada.",true);
-      const batch=writeBatch(adminDb);
-      batch.update(doc(adminDb,"keys",k.hash),{revoked:next,revokedAt:next?serverTimestamp():null});
-      if(k.boundUid){
-        const br=doc(adminDb,"users",k.boundUid,"bindings",k.hash);
-        const bs=await getDoc(br);if(bs.exists())batch.update(br,{revoked:next});
-      }
-      await batch.commit();renderAdmin();
+      await updateDoc(doc(adminDb,"keys",k.hash),{revoked:next,revokedAt:next?serverTimestamp():null});
+      renderAdmin();
     }catch(e){toast(errorText(e),true)}
   });
   document.querySelectorAll("[data-kdelete]").forEach(b=>b.onclick=()=>confirmBox("Excluir key","Ela deixará de funcionar imediatamente.",async()=>{
     const k=s.keys.find(x=>x.hash===b.dataset.kdelete);if(!k)return;
     try{
-      const batch=writeBatch(adminDb);batch.delete(doc(adminDb,"keys",k.hash));
-      if(k.boundUid)batch.delete(doc(adminDb,"users",k.boundUid,"bindings",k.hash));
-      await batch.commit();toast("Key excluída.");renderAdmin();
+      await deleteDoc(doc(adminDb,"keys",k.hash));
+      toast("Key excluída.");renderAdmin();
     }catch(e){toast(errorText(e),true)}
   }));
 }
