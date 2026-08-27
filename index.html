@@ -653,7 +653,7 @@ async function loginKey(code){
     claimSnap=await getDoc(claimRef);
   }catch(e){
     if(String(e?.code||"").includes("permission-denied")){
-      throw new Error("Esta key já foi vinculada a outro navegador.");
+      throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
     }
     throw e;
   }
@@ -675,7 +675,7 @@ async function loginKey(code){
         if(check.exists()&&check.data().uid===uid){
           claimSnap=check;
         }else{
-          throw new Error("Esta key já foi vinculada a outro navegador.");
+          throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
         }
       }catch(e2){
         if(String(e2?.message||"").includes("outro navegador"))throw e2;
@@ -683,7 +683,7 @@ async function loginKey(code){
       }
     }
   }else{
-    if(claimSnap.data().uid!==uid)throw new Error("Esta key já foi vinculada a outro navegador.");
+    if(claimSnap.data().uid!==uid)throw new Error("Esta key já possui um vínculo ativo. Se foi um teste anterior, o admin pode usar Keys → Desvincular navegador.");
   }
 
   // 4) Lê novamente o claim para obter o timestamp real do servidor.
@@ -995,13 +995,13 @@ function adminStock(c,s){
 
 function adminKeys(c,s){
   const f=s.keys.filter(k=>{const st=keyStatus(k),q=keySearch.trim().toLowerCase();return(keyFilter==="all"||st===keyFilter)&&(!q||(k.code||"").toLowerCase().includes(q)||(k.note||"").toLowerCase().includes(q))});
-  c.innerHTML=`<div class="card"><div class="section" style="margin:0 0 14px"><div><h2>Criar keys</h2><p>7, 15 ou 30 dias. O prazo só começa no primeiro acesso.</p></div></div>
+  c.innerHTML=`<div class="card"><div class="section" style="margin:0 0 14px"><div><h2>Criar keys</h2><p>7, 15 ou 30 dias. O prazo só começa no primeiro acesso. Se uma tentativa antiga prender uma key, use <b>Desvincular navegador</b>.</p></div></div>
     <div class="grid g3"><div class="field"><label>Duração</label><select id="duration"><option value="7">7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></div><div class="field"><label>Quantidade</label><input id="qty" type="number" min="1" max="100" value="1"></div><div class="field"><label>Observação</label><input id="note" placeholder="Ex.: Cliente João"></div></div>
     <div class="actions"><button class="btn primary" id="createKeys">Gerar key(s)</button><button class="btn" id="copyUnused">Copiar não usadas</button></div>
   </div>
   <div class="section"><div><h2>Keys</h2><p>${f.length} key(s).</p></div><div class="toolbar"><input id="keySearch" placeholder="Buscar..." value="${esc(keySearch)}"><select id="keyFilter"><option value="all">Todas</option><option value="unused" ${keyFilter==="unused"?"selected":""}>Não usadas</option><option value="active" ${keyFilter==="active"?"selected":""}>Ativas</option><option value="expired" ${keyFilter==="expired"?"selected":""}>Expiradas</option><option value="revoked" ${keyFilter==="revoked"?"selected":""}>Revogadas</option></select></div></div>
   <div class="tablewrap"><table><thead><tr><th>Status</th><th>Key</th><th>Prazo</th><th>Ativada</th><th>Último acesso</th><th>Acessos</th><th>Obs.</th><th>Ações</th></tr></thead><tbody>
-  ${f.map(k=>{const st=keyStatus(k);return`<tr><td><span class="badge ${st}">${keyLabel(st)}</span></td><td class="mono"><b>${esc(k.code||"")}</b></td><td>${k.durationDays} dias</td><td>${fmt(k.activatedAt)}</td><td>${fmt(k.lastAccessAt)}</td><td>${k.accessCount||0}</td><td>${esc(k.note||"—")}</td><td><div class="actions"><button class="btn sm" data-kcopy="${k.hash}">Copiar</button>${st!=="expired"?`<button class="btn sm ${k.revoked?"success":"warning"}" data-krevoke="${k.hash}">${k.revoked?"Reativar":"Revogar"}</button>`:""}<button class="btn sm danger" data-kdelete="${k.hash}">Excluir</button></div></td></tr>`}).join("")||`<tr><td colspan="8"><div class="empty">Nenhuma key.</div></td></tr>`}
+  ${f.map(k=>{const st=keyStatus(k);return`<tr><td><span class="badge ${st}">${keyLabel(st)}</span></td><td class="mono"><b>${esc(k.code||"")}</b></td><td>${k.durationDays} dias</td><td>${fmt(k.activatedAt)}</td><td>${fmt(k.lastAccessAt)}</td><td>${k.accessCount||0}</td><td>${esc(k.note||"—")}</td><td><div class="actions"><button class="btn sm" data-kcopy="${k.hash}">Copiar</button>${k.activatedAt?`<button class="btn sm" data-kreset="${k.hash}">Desvincular navegador</button>`:""}${st!=="expired"?`<button class="btn sm ${k.revoked?"success":"warning"}" data-krevoke="${k.hash}">${k.revoked?"Reativar":"Revogar"}</button>`:""}<button class="btn sm danger" data-kdelete="${k.hash}">Excluir</button></div></td></tr>`}).join("")||`<tr><td colspan="8"><div class="empty">Nenhuma key.</div></td></tr>`}
   </tbody></table></div>`;
 
   document.getElementById("createKeys").onclick=async()=>{
@@ -1019,6 +1019,22 @@ function adminKeys(c,s){
   document.getElementById("copyUnused").onclick=()=>{const a=s.keys.filter(k=>keyStatus(k)==="unused").map(k=>k.code);a.length?copyText(a.join("\n")):toast("Não há keys não usadas.",true)};
   document.getElementById("keySearch").onchange=e=>{keySearch=e.target.value;renderAdmin()};document.getElementById("keyFilter").onchange=e=>{keyFilter=e.target.value;renderAdmin()};
   document.querySelectorAll("[data-kcopy]").forEach(b=>b.onclick=()=>{const k=s.keys.find(x=>x.hash===b.dataset.kcopy);k&&copyText(k.code)});
+  document.querySelectorAll("[data-kreset]").forEach(b=>b.onclick=()=>confirmBox(
+    "Desvincular navegador",
+    "Isso remove somente o vínculo atual desta key. Ela voltará para Não usada e o prazo começará novamente no próximo primeiro acesso.",
+    async()=>{
+      const k=s.keys.find(x=>x.hash===b.dataset.kreset);
+      if(!k)return;
+      try{
+        await deleteDoc(doc(adminDb,"claims",k.hash));
+        toast("Vínculo removido. A key voltou para Não usada.");
+        renderAdmin();
+      }catch(e){
+        toast(errorText(e),true);
+      }
+    }
+  ));
+
   document.querySelectorAll("[data-krevoke]").forEach(b=>b.onclick=async()=>{
     const k=s.keys.find(x=>x.hash===b.dataset.krevoke);if(!k)return;
     const next=!k.revoked;
